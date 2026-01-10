@@ -1,0 +1,3 @@
+Processing deleteit.cpp with SVF flags: -ander
+Pointer			Pointees
+b_main			a_main
