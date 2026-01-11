@@ -11,10 +11,16 @@ LLVM_PATH=""
 
 function run_base(){
     filepath="$1"
-    "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -dump-callgraph $filepath.bc > $filepath.pta;
+    # 1. Internalize all functions except main (marks them as internal)
+    # 2. Run Global Dead Code Elimination (removes internal, uncalled functions)
+    "$LLVM_PATH/opt" -S -passes='internalize,globaldce' -internalize-public-api-list=main $filepath.bc -o $filepath.opt.bc
+    # 3. Run dvf/wpa on the optimized bitcode
+    # "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -dump-callgraph $filepath.opt.bc > $filepath.pta
+    "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -dump-callgraph $filepath.opt.bc > $filepath.pta;
     python3 extractor.py $filepath;
-    # rm $filepath.pta;
+    rm $filepath.pta;
     rm $filepath.bc
+    rm $filepath.opt.bc
     rm callgraph_initial.dot
     rm callgraph_final.dot
 }

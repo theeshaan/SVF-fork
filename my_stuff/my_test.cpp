@@ -1,13 +1,20 @@
-class A
+int p;
+int *q,*r;
+int **s;
+
+void foo()
 {
-public:
-    int *p;
-};
+    *s = &p;
+}
+
+void bar()
+{
+    s = &r;
+}
 
 int main()
 {
-    A a, *b;
-    int x;
-    a.p = &x;
-    b = &a;
+    s = &q;
+    foo();
+    return 0;
 }
