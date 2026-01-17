@@ -20,5 +20,7 @@ int main() {
     a.x = 1;
     a.fp = f1;
     a.fp(a.x);
+    a.fp = f2;
+    a.fp(10);
     return 0;
 }
