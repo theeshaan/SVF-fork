@@ -1,20 +1,24 @@
 #include <iostream>
+using namespace std;
 
-struct Obj {
-    int value;
+// writing a code in which structures have function pointers in them
+struct A {
+    int x;
+    void (*fp)(int);
 };
 
-Obj* id(Obj* p) {
-    // Identity function
-    return p;
+void f1(int y) {
+    cout << "f1: " << y << endl;
+}
+
+void f2(int z) {
+    cout << "f2: " << z << endl;
 }
 
 int main() {
-    Obj a;
-    Obj b;
-
-    Obj* pa = id(&a);  // Call context 1
-    Obj* pb = id(&b);  // Call context 2
-
+    A a;
+    a.x = 1;
+    a.fp = f1;
+    a.fp(a.x);
     return 0;
 }

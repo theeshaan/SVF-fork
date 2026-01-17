@@ -15,10 +15,12 @@ function run_base(){
     # 2. Run Global Dead Code Elimination (removes internal, uncalled functions)
     "$LLVM_PATH/opt" -S -passes='internalize,globaldce' -internalize-public-api-list=main $filepath.bc -o $filepath.opt.bc
     # 3. Run dvf/wpa on the optimized bitcode
-    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -dump-callgraph $filepath.opt.bc > $filepath.pta
+    echo "Processing $file with DVF"
+    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -dump-callgraph -max-cxt=3 -flow-bg=10000 -cxt-bg=10000 $filepath.opt.bc > $filepath.pta
+    # echo "Processing $file with SVF flags: $SVF_PTA_FLAG"
     # "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -dump-callgraph $filepath.opt.bc > $filepath.pta;
     python3 extractor.py $filepath;
-    rm $filepath.pta;
+    # rm $filepath.pta;
     rm $filepath.bc
     rm $filepath.opt.bc
     rm callgraph_initial.dot
@@ -172,6 +174,5 @@ for file in "$@"; do
         continue  # Skip to next file
     fi
 
-    echo "Processing $file with SVF flags: $SVF_PTA_FLAG"
     run "$file"
 done

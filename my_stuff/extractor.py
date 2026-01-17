@@ -69,38 +69,72 @@ def parse_callgraph_dot(dot_file_path):
 
 
 def remove_dead_nodes(graph, token_map):
+    # Pass 1: Bridge hidden nodes (nodes not in token_map)
+    # If A -> B -> C and B is hidden (not in token_map), make A -> C.
+    
+    # We need a fixpoint loop because we might have chains of hidden nodes
     change = True
     while change:
         change = False
-        all_nodes = set()
-        for node in list(graph.keys()):
-            if len(graph[node]) == 0 or node not in token_map.keys():
+        hidden_nodes = [n for n in graph.keys() if n not in token_map]
+        hidden_set = set(hidden_nodes) # fast look up
+        
+        # Build reverse graph for efficient parent lookup
+        # We only care about edges pointing TO hidden nodes
+        parents = defaultdict(set)
+        for src, dests in graph.items():
+            for dst in dests:
+                if dst in hidden_set:
+                    parents[dst].add(src)
+
+        for hidden in hidden_nodes:
+            # If hidden node has parents, propagate its children to them
+            if hidden in parents:
+                children = graph[hidden]
+                for p in parents[hidden]:
+                    if hidden in graph[p]: # Check existence to be safe
+                        graph[p].remove(hidden)
+                        graph[p].update(children)
+                        change = True
+            
+            # Remove hidden node from graph definition
+            if hidden in graph: 
+                graph.pop(hidden)
+                # Removing a hidden node is a change
+                change = True
+
+    # Pass 2: Clean up leaf nodes (source nodes that point to nothing)
+    # and "same token" reduction.
+    change = True
+    while change:
+        change = False
+        keys = list(graph.keys()) # Copy keys
+        for node in keys:
+            # Case 1: Empty pointers (Leaf nodes)
+            if len(graph[node]) == 0:
                 graph.pop(node)
                 change = True
                 continue
             
+            # Case 2: Node points only to itself/same-token (Redundant)
+            # Logic: if A -> {B} and Token(A) == Token(B), remove A.
             if len(graph[node]) == 1:
                 other = list(graph[node])[0]
-                if other in token_map.keys() and token_map[node] == token_map[other]:
+                if other in token_map and node in token_map and token_map[node] == token_map[other]:
                     graph.pop(node)
                     change = True
                     continue
             
-            removal_list = []
-            for other in graph[node]:
-                if other not in token_map.keys():
-                    removal_list.append(other)
-            for other in removal_list:
-                graph[node].remove(other)
-                change = True
+            # Case 3: Prune edges to non-existent nodes (should be handled by bridging, but for safety)
+            # Actually, bridging restricted itself to `graph.keys()`. 
+            # If there are pointees that are NOT in graph.keys() AND NOT in token_map, they are dead ends.
+            current_pointees = list(graph[node])
+            for p in current_pointees:
+                if p not in token_map and p not in graph:
+                    graph[node].remove(p)
+                    change = True
 
-            all_nodes.add(node)
-            all_nodes.update(graph[node])
 
-        for node in list(token_map.keys()):
-            if node not in all_nodes:
-                token_map.pop(node)
-                change = True
 
 
 def remap_nodes(graph, token_map):
@@ -182,6 +216,13 @@ def map_variables_to_functions(token_map, func_name_map):
             
     return new_token_map
 
+def build_index_to_id_map(token_map, func_name_map):
+    # creates index to id map and demangles function names in pointees
+    for idx in token_map.keys():
+        if idx in func_name_map:
+            token_map[idx] = (func_name_map[idx], token_map[idx][1], token_map[idx][2])
+    return {idx: token_map[idx][0] for idx in token_map.keys()}
+
 def display_pts_to_info(graph, id_map):
     print("Pointer\t\t\tPointees")
     # Sort for deterministic output
@@ -228,6 +269,6 @@ if __name__ == "__main__":
     remove_dead_nodes(pta_graph, token_map)
     remove_stl_pointers(pta_graph, token_map) # seems a bit scammy, check this out carefully
     pta_graph, token_map = remap_nodes(pta_graph, token_map)
-    index_to_id_map = {idx: token_map[idx][0] for idx in token_map.keys()}
+    index_to_id_map = build_index_to_id_map(token_map, func_name_map)
 
     display_pts_to_info(pta_graph, index_to_id_map)
