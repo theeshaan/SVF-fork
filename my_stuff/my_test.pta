@@ -33,8 +33,8 @@ TotalSVFStmts       24
 VarArrayObj         0
 VarStructObj        2
 ----------------Time and memory stats--------------------
-LLVMIRTime          0.009
-SVFIRTime           0
+LLVMIRTime          0.011
+SVFIRTime           0.001
 SymbolTableTime     0
 #######################################################
 
@@ -66,7 +66,7 @@ MemoryUsageVmrss    572
 MemoryUsageVmsize   0
 SCCDetectTime       0
 SCCMergeTime        0
-TotalTime           0
+TotalTime           0.001
 UpdateCGTime        0
 ----------------Numbers stats----------------------------
 AddrProcessed       12
@@ -450,7 +450,7 @@ GenMUCHITime        0
 GenRegionTime       0
 InsertPHITime       0
 SSARenameTime       0
-TotalMSSATime       0.001
+TotalMSSATime       0
 ----------------Numbers stats----------------------------
 BBHasMSSAPhi        0
 CSChiNode           0
@@ -558,7 +558,7 @@ AvgPtsSize          1.0625
 AvgTimePerQuery     0
 MemoryUsageVmrss    0
 MemoryUsageVmsize   0
-TotalBKCondTime     5.47369e-313
+TotalBKCondTime     0
 TotalQueryTime      0
 ----------------Numbers stats----------------------------
 IndEdgeSolved       0
@@ -604,35 +604,38 @@ Writing 'callgraph_final.dot'...
 /***********************************************************
  * Context-Sensitive Points-To Data Dump
  ***********************************************************/
-VarNodeID: 45 | Context: [: ]
-  PointsTo: { <46, [: ]> }
-VarNodeID: 43 | Context: [: ]
-  PointsTo: { <26, [: ]> }
-VarNodeID: 41 | Context: [: ]
-  PointsTo: { <28, [: ]> }
-VarNodeID: 4 | Context: [: ]
-  PointsTo: { <5, [: ]> }
-VarNodeID: 6 | Context: [: ]
-  PointsTo: { <26, [: ]> <28, [: ]> }
-VarNodeID: 7 | Context: [: ]
-  PointsTo: { <26, [: ]> <28, [: ]> }
-VarNodeID: 8 | Context: [: ]
-  PointsTo: { <9, [: ]> }
-VarNodeID: 14 | Context: [: ]
-  PointsTo: { <15, [: ]> }
-VarNodeID: 20 | Context: [: ]
-  PointsTo: { <21, [: ]> }
-VarNodeID: 23 | Context: [: ]
-  PointsTo: { <24, [: ]> }
-VarNodeID: 25 | Context: [: ]
-  PointsTo: { <26, [: ]> }
-VarNodeID: 27 | Context: [: ]
-  PointsTo: { <28, [: ]> }
-VarNodeID: 29 | Context: [: ]
-  PointsTo: { <30, [: ]> }
-VarNodeID: 31 | Context: [: ]
-  PointsTo: { <32, [: ]> }
-VarNodeID: 38 | Context: [: ]
-  PointsTo: { <26, [: ]> }
+Variable 45 points to:
+  <46 [: ]> 
+Variable 43 points to:
+  <26 [: ]> 
+Variable 41 points to:
+  <28 [: ]> 
+Variable 0 points to:
+Variable 4 points to:
+  <5 [: ]> 
+Variable 6 points to:
+  <26 [: ]> 
+  <28 [: ]> 
+Variable 7 points to:
+  <26 [: ]> 
+  <28 [: ]> 
+Variable 8 points to:
+  <9 [: ]> 
+Variable 14 points to:
+  <15 [: ]> 
+Variable 20 points to:
+  <21 [: ]> 
+Variable 23 points to:
+  <24 [: ]> 
+Variable 25 points to:
+  <26 [: ]> 
+Variable 27 points to:
+  <28 [: ]> 
+Variable 29 points to:
+  <30 [: ]> 
+Variable 31 points to:
+  <32 [: ]> 
+Variable 38 points to:
+  <26 [: ]> 
 ***********************************************************/
 
