@@ -34,6 +34,9 @@
 #include "DDA/FlowDDA.h"
 #include "DDA/ContextDDA.h"
 #include "DDA/DDAClient.h"
+// E: Added these includes (Eshaan)
+
+
 
 #include <sstream>
 #include <limits.h>
@@ -104,6 +107,51 @@ void DDAPass::selectClient()
     _client->initialise();
 }
 
+// E: Below function is added by me (Eshaan)
+/// Dump complete context-sensitive points-to information
+void dumpContextSensitiveData(ContextDDA* pta) {
+    if (!pta) return;
+    // 1. Access the underlying mutable points-to data structure
+    auto* mutPTData = pta->getMutPTDataTy();
+    if (!mutPTData) {
+        SVFUtil::outs() << "Error: No mutable points-to data found.\n";
+        return;
+    }
+    // 2. Access the internal map: Key -> DataSet
+    // Key: CxtVar (CondVar<ContextCond>) i.e., pair of (Context, VariableID)
+    // DataSet: CxtPtSet (CondStdSet<CondVar<ContextCond>>)
+    const auto& ptsMap = mutPTData->getPtsMap();
+    SVFUtil::outs() << "\n\n/***********************************************************\n";
+    SVFUtil::outs() << " * Context-Sensitive Points-To Data Dump\n";
+    SVFUtil::outs() << " ***********************************************************/\n";
+    for (const auto& entry : ptsMap) {
+        const CxtVar& key = entry.first;
+        const CxtPtSet& ptsSet = entry.second;
+        // Extract context and variable ID
+        NodeID varId = key.get_id();
+        const ContextCond& ctx = key.get_cond();
+        // Skip empty sets
+        if (ptsSet.empty()) continue;
+        SVFUtil::outs() << "VarNodeID: " << varId 
+                  << " | Context: " << ctx.toString() << "\n";
+        
+        SVFUtil::outs() << "  PointsTo: { ";
+        
+        // Iterate over the Condition-Variable pairs in the set
+        // CxtPtSet is a Set of CxtVar (CondVar<ContextCond>)
+        // It does NOT have cptsBegin()/cptsEnd() like the specific CondPointsToSet class.
+        for (auto it = ptsSet.begin(); it != ptsSet.end(); ++it) {
+           const CxtVar& targetVar = *it; // The element is a CxtVar (Condition + Variable)
+           
+           NodeID targetId = targetVar.get_id();
+           const ContextCond& targetCtx = targetVar.get_cond();
+           SVFUtil::outs() << "<" << targetId << ", " << targetCtx.toString() << "> ";
+        }
+        SVFUtil::outs() << "}\n";
+    }
+    SVFUtil::outs() << "***********************************************************/\n\n";
+}
+
 /// Create pointer analysis according to specified kind and analyze the module.
 void DDAPass::runPointerAnalysis(SVFIR* pag, u32_t kind)
 {
@@ -141,9 +189,16 @@ void DDAPass::runPointerAnalysis(SVFIR* pag, u32_t kind)
         _client->answerQueries(_pta.get());
         ///finalize
         _pta->finalize();
-        if(Options::PrintCPts())
+        // E: Below if block is modified by me (Eshaan)
+        if(Options::PrintCPts()) {
             _pta->dumpCPts();
-
+            
+            // E:--- ADDED THIS BLOCK ---
+            if (auto* contextDDA = SVFUtil::dyn_cast<ContextDDA>(_pta.get())) {
+                 dumpContextSensitiveData(contextDDA);
+            }
+            // ----------------------
+        }
         if (_pta->printStat())
             _client->performStat(_pta.get());
 

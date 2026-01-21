@@ -20,7 +20,7 @@ function run_base(){
     # echo "Processing $file with SVF flags: $SVF_PTA_FLAG"
     # "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -dump-callgraph $filepath.opt.bc > $filepath.pta;
     python3 extractor.py $filepath;
-    rm $filepath.pta;
+    # rm $filepath.pta;
     rm $filepath.bc
     rm $filepath.opt.bc
     rm callgraph_initial.dot

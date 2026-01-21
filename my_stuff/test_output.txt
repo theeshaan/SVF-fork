@@ -1,0 +1,7 @@
+Processing my_test.cpp with DVF
+Pointer              Pointees
+------------------------------
+id                   a_main, b_main
+p_id                 a_main, b_main
+pa_main              a_main, b_main
+pb_main              a_main, b_main

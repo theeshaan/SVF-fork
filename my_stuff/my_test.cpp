@@ -1,26 +1,21 @@
-#include <iostream>
-using namespace std;
+extern void NOALIAS(void*,void*);
 
-// writing a code in which structures have function pointers in them
-struct A {
-    int x;
-    void (*fp)(int);
+struct Obj {
+    int value;
 };
 
-void f1(int y) {
-    cout << "f1: " << y << endl;
-}
-
-void f2(int z) {
-    cout << "f2: " << z << endl;
+Obj* id(Obj* p) {
+    // Identity function
+    return p;
 }
 
 int main() {
-    A a;
-    a.x = 1;
-    a.fp = f1;
-    a.fp(a.x);
-    a.fp = f2;
-    a.fp(10);
+    Obj a;
+    Obj b;
+
+    Obj* pa = id(&a);  // Call context 1
+    Obj* pb = id(&b);  // Call context 2
+NOALIAS(pa,pb);
+
     return 0;
 }

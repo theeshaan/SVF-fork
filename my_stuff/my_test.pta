@@ -1,0 +1,638 @@
+Writing 'callgraph_initial.dot'...
+Writing 'callgraph_initial.dot'...
+
+*********General Stats***************
+################ (program : my_test.opt.bc)###############
+AddrsNum            12
+BBWith2Succ         0
+BBWith3Succ         0
+CallsNum            2
+ConstArrayObj       0
+ConstStructObj      0
+ConstantObj         0
+CopysNum            1
+FIObjNum            5
+FSObjNum            6
+FunctionObjs        4
+GepsNum             0
+GlobalObjs          0
+HeapObjs            1
+IndCallSites        0
+LoadsNum            1
+MaxStructSize       1
+NonPtrObj           8
+ReturnsNum          2
+StackObjs           6
+StoresNum           4
+TotalCallSite       3
+TotalFieldObjects   0
+TotalObjects        12
+TotalPTASVFStmts    22
+TotalPointers       39
+TotalSVFStmts       24
+VarArrayObj         0
+VarStructObj        2
+----------------Time and memory stats--------------------
+LLVMIRTime          0.009
+SVFIRTime           0
+SymbolTableTime     0
+#######################################################
+
+*********PTACallGraph Stats (Andersen analysis)***************
+################ (program : my_test.opt.bc)###############
+----------------Numbers stats----------------------------
+CalRetPairInCycle   0
+MaxNodeInCycle      0
+NodeInCycle         0
+TotalCycle          0
+TotalEdge           3
+TotalNode           4
+#######################################################
+
+*********Andersen Pointer Analysis Stats***************
+################ (program : my_test.opt.bc)###############
+----------------Time and memory stats--------------------
+AvgIn/OutAddrEdge   0.4
+AvgIn/OutCopyEdge   0.333333
+AvgIn/OutEdge       0.866667
+AvgIn/OutLoadEdge   0.0333333
+AvgIn/OutStoreEdge  0.1
+AvgPtsSetSize       0.54902
+AvgTopLvlPtsSize    1.25
+CollapseTime        0
+CopyGepTime         0
+LoadStoreTime       0
+MemoryUsageVmrss    572
+MemoryUsageVmsize   0
+SCCDetectTime       0
+SCCMergeTime        0
+TotalTime           0
+UpdateCGTime        0
+----------------Numbers stats----------------------------
+AddrProcessed       12
+CopyProcessed       10
+DummyFieldPtrs      0
+FieldObjs           0
+GepProcessed        0
+IndCallSites        0
+IndEdgeSolved       0
+LoadProcessed       1
+LocalVarInRecur     0
+MaxInAddrEdge       1
+MaxInCopyEdge       2
+MaxInLoadEdge       1
+MaxInStoreEdge      1
+MaxNodesInSCC       0
+MaxOutAddrEdge      2
+MaxOutCopyEdge      2
+MaxOutLoadEdge      1
+MaxOutStoreEdge     1
+MaxPtsSetSize       2
+MemObjects          12
+NodesInCycles       0
+NullPointer         0
+NumOfAddrs          12
+NumOfCGEdge         14
+NumOfCGNode         33
+NumOfCopys          10
+NumOfFieldExpand    0
+NumOfGeps           0
+NumOfLoads          1
+NumOfSCCDetect      2
+NumOfSFRs           0
+NumOfStores         3
+NumOfValidNode      30
+NumOfValidObjNode   11
+Pointers            39
+PointsToBlkPtr      0
+PointsToConstPtr    0
+SolveIterations     2
+StoreProcessed      3
+TotalCycleNum       0
+TotalObjects        12
+TotalPWCCycleNum    0
+TotalPointers       39
+#######################################################
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 0 		PointsTo: {empty}
+
+----------------------------------------------
+
+Ptr 1 		PointsTo: {empty}
+
+----------------------------------------------
+##<Dummy Obj > id:2
+Ptr 2 		PointsTo: {empty}
+
+----------------------------------------------
+##<Dummy Obj > id:3
+Ptr 3 		PointsTo: {empty}
+
+----------------------------------------------
+##<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+Ptr 4 		PointsTo: { 5 }
+
+!!Target NodeID 5	 [<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }] 
+----------------------------------------------
+##<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+Ptr 5 		PointsTo: {empty}
+
+----------------------------------------------
+##<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+Ptr 6 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<p> Source Loc: { 0th arg _Z2idP3Obj "ln": 7, "file": "my_test.cpp" }
+Ptr 7 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<p.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }
+Ptr 8 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<p.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<p.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }
+Ptr 9 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 10 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<> Source Loc: 
+Ptr 11 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 7, "cl": 14, "fl": "my_test.cpp" }
+Ptr 12 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 9, "cl": 5, "fl": "my_test.cpp" }
+Ptr 13 		PointsTo: {empty}
+
+----------------------------------------------
+##<llvm.dbg.declare> Source Loc: 
+Ptr 14 		PointsTo: { 15 }
+
+!!Target NodeID 15	 [<llvm.dbg.declare> Source Loc: ] 
+----------------------------------------------
+##<llvm.dbg.declare> Source Loc: 
+Ptr 15 		PointsTo: {empty}
+
+----------------------------------------------
+##<llvm.dbg.declare> Source Loc: 
+Ptr 16 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 0th arg llvm.dbg.declare  }
+Ptr 17 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 1st arg llvm.dbg.declare  }
+Ptr 18 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 2nd arg llvm.dbg.declare  }
+Ptr 19 		PointsTo: {empty}
+
+----------------------------------------------
+##<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }
+Ptr 20 		PointsTo: { 21 }
+
+!!Target NodeID 21	 [<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }] 
+----------------------------------------------
+##<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }
+Ptr 21 		PointsTo: {empty}
+
+----------------------------------------------
+##<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }
+Ptr 22 		PointsTo: {empty}
+
+----------------------------------------------
+##<retval> Source Loc: 
+Ptr 23 		PointsTo: { 24 }
+
+!!Target NodeID 24	 [<retval> Source Loc: ] 
+----------------------------------------------
+##<retval> Source Loc: 
+Ptr 24 		PointsTo: {empty}
+
+----------------------------------------------
+##<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }
+Ptr 25 		PointsTo: { 26 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }
+Ptr 26 		PointsTo: {empty}
+
+----------------------------------------------
+##<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }
+Ptr 27 		PointsTo: { 28 }
+
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }
+Ptr 28 		PointsTo: {empty}
+
+----------------------------------------------
+##<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }
+Ptr 29 		PointsTo: { 30 }
+
+!!Target NodeID 30	 [<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }
+Ptr 30 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }
+Ptr 31 		PointsTo: { 32 }
+
+!!Target NodeID 32	 [<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }
+Ptr 32 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 33 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 34 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<> Source Loc: { "ln": 13, "cl": 9, "fl": "my_test.cpp" }
+Ptr 35 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 14, "cl": 9, "fl": "my_test.cpp" }
+Ptr 36 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 16, "cl": 10, "fl": "my_test.cpp" }
+Ptr 37 		PointsTo: {empty}
+
+----------------------------------------------
+##<call> Source Loc: { "ln": 16, "cl": 15, "fl": "my_test.cpp" }
+Ptr 38 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 16, "cl": 10, "fl": "my_test.cpp" }
+Ptr 39 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 17, "cl": 10, "fl": "my_test.cpp" }
+Ptr 40 		PointsTo: {empty}
+
+----------------------------------------------
+##<call1> Source Loc: { "ln": 17, "cl": 15, "fl": "my_test.cpp" }
+Ptr 41 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 17, "cl": 10, "fl": "my_test.cpp" }
+Ptr 42 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 18, "cl": 9, "fl": "my_test.cpp" }
+Ptr 43 		PointsTo: { 26 28 }
+
+!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 18, "cl": 1, "fl": "my_test.cpp" }
+Ptr 44 		PointsTo: {empty}
+
+----------------------------------------------
+##<_Z7NOALIASPvS_> Source Loc: 
+Ptr 45 		PointsTo: { 46 }
+
+!!Target NodeID 46	 [<_Z7NOALIASPvS_> Source Loc: ] 
+----------------------------------------------
+##<_Z7NOALIASPvS_> Source Loc: 
+Ptr 46 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 20, "cl": 5, "fl": "my_test.cpp" }
+Ptr 47 		PointsTo: {empty}
+
+----------------------------------------------
+##<_Z7NOALIASPvS_> Source Loc: 
+Ptr 48 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 0th arg _Z7NOALIASPvS_  }
+Ptr 49 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 1st arg _Z7NOALIASPvS_  }
+Ptr 50 		PointsTo: {empty}
+
+----------------------------------------------
+Writing 'callgraph_final.dot'...
+
+****Persistent Points-To Cache Statistics: Andersen's analysis bitvector****
+################ (program : my_test.opt.bc)###############
+UniquePointsToSets       13
+TotalUnions              24
+PropertyUnions           21
+UniqueUnions             1
+LookupUnions             0
+PreemptiveUnions         2
+TotalComplements         66
+PropertyComplements      66
+UniqueComplements        0
+LookupComplements        0
+PreemptiveComplements    0
+TotalIntersections       4
+PropertyIntersections    4
+UniqueIntersections      0
+LookupIntersections      0
+PreemptiveIntersections  0
+#######################################################
+
+*********Memory SSA Statistics***************
+################ (program : my_test.opt.bc)###############
+----------------Time and memory stats--------------------
+AverageRegSize      1
+GenMUCHITime        0
+GenRegionTime       0
+InsertPHITime       0
+SSARenameTime       0
+TotalMSSATime       0
+----------------Numbers stats----------------------------
+BBHasMSSAPhi        0
+CSChiNode           0
+CSHasChi            0
+CSHasMu             0
+CSMuNode            0
+FunEntryChi         3
+FunHasEntryChi      2
+FunHasRetMu         2
+FunRetMu            3
+LoadHasMu           1
+LoadMuNode          1
+MSSAPhi             0
+MaxRegSize          1
+MemRegions          3
+StoreChiNode        3
+StoreHasChi         3
+#######################################################
+
+*********SVFG Statistics***************
+################ (program : my_test.opt.bc)###############
+----------------Time and memory stats--------------------
+ATNodeTime          0
+AvgWeight           1
+ConnDirEdgeTime     0
+ConnIndEdgeTime     0
+OptTime             0
+TLNodeTime          0
+TotalTime           0
+----------------Numbers stats----------------------------
+ActualIn            0
+ActualOut           0
+ActualParam         4
+ActualRet           2
+Addr                12
+AvgInDegree         0
+AvgIndInDeg         1
+AvgIndOutDeg        1
+AvgOutDegree        0
+Copy                1
+DirectCallEdge      2
+DirectEdge          18
+DirectRetEdge       2
+FormalIn            3
+FormalOut           3
+FormalParam         1
+FormalRet           1
+Gep                 0
+IndCallEdge         0
+IndRetEdge          0
+IndirectEdge        7
+IndirectEdgeLabels  7
+Load                1
+MSSAPhi             0
+MaxInDegree         3
+MaxIndInDeg         1
+MaxIndOutDeg        2
+MaxOutDegree        2
+PHI                 1
+Store               3
+TotalEdge           25
+TotalNode           33
+#######################################################
+Writing 'callgraph_initial.dot'...
+
+*********Memory SSA Statistics***************
+################ (program : my_test.opt.bc)###############
+----------------Time and memory stats--------------------
+AverageRegSize      1
+GenMUCHITime        0
+GenRegionTime       0
+InsertPHITime       0
+SSARenameTime       0
+TotalMSSATime       0.001
+----------------Numbers stats----------------------------
+BBHasMSSAPhi        0
+CSChiNode           0
+CSHasChi            0
+CSHasMu             0
+CSMuNode            0
+FunEntryChi         3
+FunHasEntryChi      2
+FunHasRetMu         2
+FunRetMu            3
+LoadHasMu           1
+LoadMuNode          1
+MSSAPhi             0
+MaxRegSize          1
+MemRegions          3
+StoreChiNode        3
+StoreHasChi         3
+#######################################################
+
+*********SVFG Statistics***************
+################ (program : my_test.opt.bc)###############
+----------------Time and memory stats--------------------
+ATNodeTime          0
+AvgWeight           1
+ConnDirEdgeTime     0
+ConnIndEdgeTime     0
+OptTime             0
+TLNodeTime          0
+TotalTime           0
+----------------Numbers stats----------------------------
+ActualIn            0
+ActualOut           0
+ActualParam         4
+ActualRet           2
+Addr                12
+AvgInDegree         0
+AvgIndInDeg         1
+AvgIndOutDeg        1
+AvgOutDegree        0
+Copy                1
+DirectCallEdge      2
+DirectEdge          18
+DirectRetEdge       2
+FormalIn            3
+FormalOut           3
+FormalParam         1
+FormalRet           1
+Gep                 0
+IndCallEdge         0
+IndRetEdge          0
+IndirectEdge        7
+IndirectEdgeLabels  7
+Load                1
+MSSAPhi             0
+MaxInDegree         3
+MaxIndInDeg         1
+MaxIndOutDeg        2
+MaxOutDegree        2
+PHI                 1
+Store               3
+TotalEdge           25
+TotalNode           33
+#######################################################
+
+*********PTACallGraph Stats (DDA analysis)***************
+################ (program : my_test.opt.bc)###############
+----------------Numbers stats----------------------------
+CalRetPairInCycle   0
+MaxNodeInCycle      0
+NodeInCycle         0
+TotalCycle          0
+TotalEdge           3
+TotalNode           4
+#######################################################
+
+*********SVFG SCC Stat***************
+################ (program : my_test.opt.bc)###############
+----------------Numbers stats----------------------------
+CallEdgeInCycle     0
+DirEdgeInCycle      0
+EdgeInCycle         0
+IndEdgeInCycle      0
+InsenCallEdge       0
+InsenRetEdge        0
+MaxNodeInCycle      0
+NodeInCycle         0
+RetEdgeInCycle      0
+TotalCallEdge       2
+TotalCycle          0
+TotalDirEdge        18
+TotalEdge           25
+TotalIndEdge        7
+TotalNode           33
+TotalRetEdge        2
+#######################################################
+
+****Demand-Driven Pointer Analysis Statistics****
+
+************************
+################ (program : my_test.opt.bc)###############
+----------------Time and memory stats--------------------
+AvgCPtsSize         1.0625
+AvgDPMAtLoc         0.8125
+AvgPtsSize          1.0625
+AvgTimePerQuery     0
+MemoryUsageVmrss    0
+MemoryUsageVmsize   0
+TotalBKCondTime     5.47369e-313
+TotalQueryTime      0
+----------------Numbers stats----------------------------
+IndEdgeSolved       0
+MaxCPtsSize         2
+MaxCxtPerQuery      1
+MaxDPMAtLoc         1
+MaxPathPerQuery     0
+MaxPtsSize          2
+NumOfDPM            35
+NumOfInfePath       2
+NumOfMustAA         0
+NumOfNullPtr        1
+NumOfOOBQuery       0
+NumOfQuery          16
+NumOfSU             1
+NumOfStep           37
+NumOfStepInCycle    12
+NumOfStore          3
+NumOfStoreSU        1
+PointsToBlkPtr      0
+PointsToConstPtr    0
+#######################################################
+Writing 'callgraph_final.dot'...
+[Context Sensitive DDA] Checking _Z7NOALIASPvS_
+[1;32m	 SUCCESS :[1;0m_Z7NOALIASPvS_ check <id:43, id:41> at (CallICFGNode: { "ln": 18, "cl": 1, "fl": "my_test.cpp" })
+<45 [: ]>  ==> { <46 [: ]>  }
+<43 [: ]>  ==> { <26 [: ]>  }
+<41 [: ]>  ==> { <28 [: ]>  }
+<4 [: ]>  ==> { <5 [: ]>  }
+<6 [: ]>  ==> { <26 [: ]>  <28 [: ]>  }
+<7 [: ]>  ==> { <26 [: ]>  <28 [: ]>  }
+<8 [: ]>  ==> { <9 [: ]>  }
+<14 [: ]>  ==> { <15 [: ]>  }
+<20 [: ]>  ==> { <21 [: ]>  }
+<23 [: ]>  ==> { <24 [: ]>  }
+<25 [: ]>  ==> { <26 [: ]>  }
+<27 [: ]>  ==> { <28 [: ]>  }
+<29 [: ]>  ==> { <30 [: ]>  }
+<31 [: ]>  ==> { <32 [: ]>  }
+<38 [: ]>  ==> { <26 [: ]>  }
+
+
+/***********************************************************
+ * Context-Sensitive Points-To Data Dump
+ ***********************************************************/
+VarNodeID: 45 | Context: [: ]
+  PointsTo: { <46, [: ]> }
+VarNodeID: 43 | Context: [: ]
+  PointsTo: { <26, [: ]> }
+VarNodeID: 41 | Context: [: ]
+  PointsTo: { <28, [: ]> }
+VarNodeID: 4 | Context: [: ]
+  PointsTo: { <5, [: ]> }
+VarNodeID: 6 | Context: [: ]
+  PointsTo: { <26, [: ]> <28, [: ]> }
+VarNodeID: 7 | Context: [: ]
+  PointsTo: { <26, [: ]> <28, [: ]> }
+VarNodeID: 8 | Context: [: ]
+  PointsTo: { <9, [: ]> }
+VarNodeID: 14 | Context: [: ]
+  PointsTo: { <15, [: ]> }
+VarNodeID: 20 | Context: [: ]
+  PointsTo: { <21, [: ]> }
+VarNodeID: 23 | Context: [: ]
+  PointsTo: { <24, [: ]> }
+VarNodeID: 25 | Context: [: ]
+  PointsTo: { <26, [: ]> }
+VarNodeID: 27 | Context: [: ]
+  PointsTo: { <28, [: ]> }
+VarNodeID: 29 | Context: [: ]
+  PointsTo: { <30, [: ]> }
+VarNodeID: 31 | Context: [: ]
+  PointsTo: { <32, [: ]> }
+VarNodeID: 38 | Context: [: ]
+  PointsTo: { <26, [: ]> }
+***********************************************************/
+
