@@ -5,8 +5,12 @@ import argparse
 import re
 from collections import defaultdict
 from pathlib import Path
+import subprocess
+import shutil
 
 def parse_pta_input(file_path):
+    # token map gives info about a token given the token's id (info = (name, file, line))
+    # graph is the actual points-to graph
     token_map = {}
     graph = defaultdict(set)
 
@@ -19,17 +23,46 @@ def parse_pta_input(file_path):
         name, _, line, _, fl, node_id = match
         token_map[int(node_id)] = (name, fl, line)
 
-    matches = re.findall(r"Ptr (\d+)\s+PointsTo: { (.*) }", content)
+    # TODO: This regex works for the cases where context is printed as empty "[: ]"
+    # modify it to work with contexts as well
+    matches = re.findall(r"<(\d+)\s*\[:\s*\]>\s*==>\s*\{\s*((?:<\d+\s*\[:\s*\]>\s*)*)\}", content)
+
+    for lhs, rhs in matches:
+        graph[int(lhs)] = {int(x) for x in re.findall(r"<(\d+)", rhs)}
+
+    # Parse the PTA, specifically store edges, to match pointers to variables stored in them
+    matches = re.findall(r"(\d+)\s*-- Store -->\s*(\d+)", content)
 
     for match in matches:
-        pointer_id, pointees = match
-        graph[int(pointer_id)] = {int(pointee) for pointee in pointees.strip().split() if pointees.strip()}
+        source, variable = match # the source is being stored into the variable
+        source = int(source)
+        variable = int(variable)
+        if source not in token_map or variable not in token_map:
+            continue # irrelevant tokens
+        if variable not in graph:
+            graph[variable] = set()
+        if source not in graph:
+            graph[source] = set()
+        # If the variable currently points to only one node and that node is the same as the variable
+        # then we can just update the variable's pointee set to the source's pointee set
+        if len(graph[variable]) == 1 and token_map[list(graph[variable])[0]][0] == token_map[variable][0]:
+            graph[variable] = graph[source]
+        # TODO: Check how the existing pointee set of a variable should be merged with
+        # the new info we get from here (for now I'm just appending to the existing info)
+        else:
+            graph[variable].update(graph[source])
+
+        # TODO: VERY IMPORTANT: check if below line (deleting the source from the graph)
+        # is correct
+        graph.pop(source)
+
+        # below four lines are useless, delete them
+        # for pointee in graph[source]:
+        #     # add only if the names of the source and destination variables are not the same
+        #     if token_map[source][0] != token_map[variable][0]:
+        #         graph[variable].add(pointee)
 
     return graph, token_map
-
-
-import subprocess
-import shutil
 
 def demangle(name):
     # Check if c++filt is available
@@ -133,9 +166,6 @@ def remove_dead_nodes(graph, token_map):
                 if p not in token_map and p not in graph:
                     graph[node].remove(p)
                     change = True
-
-
-
 
 def remap_nodes(graph, token_map):
     node_mapping = {node: idx + 3 for idx, node in enumerate(sorted(token_map.keys()))}
@@ -247,61 +277,61 @@ def remove_stl_pointers(graph, token_map):
             if "std::" in token_map[pointee][0]:
                 graph[pointer].remove(pointee)
 
-def filter_graph(graph, token_map):
-    # Filter out noise variables:
-    # - LLVM temporaries (call12 etc)
-    # - Compiler generated (.addr, __ etc)
-    # - STL internals
+# def filter_graph(graph, token_map):
+#     # Filter out noise variables:
+#     # - LLVM temporaries (call12 etc)
+#     # - Compiler generated (.addr, __ etc)
+#     # - STL internals
     
-    nodes_to_remove = set()
+#     nodes_to_remove = set()
     
-    # Regex for "call" followed by digits (e.g. call12) or dot (call.i)
-    call_pattern = re.compile(r"^call(\d+|\.)")
+#     # Regex for "call" followed by digits (e.g. call12) or dot (call.i)
+#     call_pattern = re.compile(r"^call(\d+|\.)")
     
-    for node, (name, file, line) in token_map.items():            
-        # Note: name might be suffixed with _main, so check start
-        if name.startswith("call"):
-            # Check if it is strictly call + digits/dot + optional suffix
-            # e.g. call12_main or call_main or call.i
-            parts = name.split('_')
-            base = parts[0]
-            if base == "call" or call_pattern.match(base):
-                nodes_to_remove.add(node)
-                continue
+#     for node, (name, file, line) in token_map.items():            
+#         # Note: name might be suffixed with _main, so check start
+#         if name.startswith("call"):
+#             # Check if it is strictly call + digits/dot + optional suffix
+#             # e.g. call12_main or call_main or call.i
+#             parts = name.split('_')
+#             base = parts[0]
+#             if base == "call" or call_pattern.match(base):
+#                 nodes_to_remove.add(node)
+#                 continue
         
-        # 3. Compiler internals (starts with __ or .)
-        if name.startswith("__") or name.startswith("."):
-            nodes_to_remove.add(node)
-            continue
+#         # 3. Compiler internals (starts with __ or .)
+#         if name.startswith("__") or name.startswith("."):
+#             nodes_to_remove.add(node)
+#             continue
             
-        # 4. Address temporaries
-        if ".addr" in name:
-            nodes_to_remove.add(node)
-            continue
+#         # 4. Address temporaries
+#         if ".addr" in name:
+#             nodes_to_remove.add(node)
+#             continue
 
-        # 5. Inlined internals (often end in .i or .i123)
-        # But be careful not to kill user variables that happened to be inlined?
-        # User variables usually don't get renamed with .i unless there is a collision or they are local statics?
-        # In STL case, __first.addr.i is already caught by __.
-        # call.i is caught by call.
-        # Let's check test_output.txt: `v_main` is fine. `call.i` is fine.
-        # So maybe just the above rules are enough.
+#         # 5. Inlined internals (often end in .i or .i123)
+#         # But be careful not to kill user variables that happened to be inlined?
+#         # User variables usually don't get renamed with .i unless there is a collision or they are local statics?
+#         # In STL case, __first.addr.i is already caught by __.
+#         # call.i is caught by call.
+#         # Let's check test_output.txt: `v_main` is fine. `call.i` is fine.
+#         # So maybe just the above rules are enough.
             
-    for node in nodes_to_remove:
-        if node in graph:
-            graph.pop(node)
-        if node in token_map:
-            token_map.pop(node)
+#     for node in nodes_to_remove:
+#         if node in graph:
+#             graph.pop(node)
+#         if node in token_map:
+#             token_map.pop(node)
             
-    # Also clean up graph edges pointing to removed nodes?
-    # No, remap_nodes will handle keys not in token_map?
-    # Wait, remap_nodes iterates graph.items(). If we removed from graph, we are good.
-    # But if A points to RemovedNode, A remains in graph. 
-    # remap_nodes: `mapped_points = {node_mapping[p] for p in points if p in node_mapping}`
-    # Since we removed RemovedNode from token_map, it won't be in node_mapping (built from token_map keys).
-    # So it will be effectively filtered from edges too.
+#     # Also clean up graph edges pointing to removed nodes?
+#     # No, remap_nodes will handle keys not in token_map?
+#     # Wait, remap_nodes iterates graph.items(). If we removed from graph, we are good.
+#     # But if A points to RemovedNode, A remains in graph. 
+#     # remap_nodes: `mapped_points = {node_mapping[p] for p in points if p in node_mapping}`
+#     # Since we removed RemovedNode from token_map, it won't be in node_mapping (built from token_map keys).
+#     # So it will be effectively filtered from edges too.
     
-    return graph, token_map
+#     return graph, token_map
 
 if __name__ == "__main__":
 
@@ -322,7 +352,7 @@ if __name__ == "__main__":
     token_map = map_variables_to_functions(token_map, func_name_map)
     remove_dead_nodes(pta_graph, token_map)
     remove_stl_pointers(pta_graph, token_map) # seems a bit scammy, check this out carefully
-    pta_graph, token_map = filter_graph(pta_graph, token_map) # Filter noise
+    # pta_graph, token_map = filter_graph(pta_graph, token_map) # Filter noise
     pta_graph, token_map = remap_nodes(pta_graph, token_map)
     index_to_id_map = build_index_to_id_map(token_map, func_name_map)
     display_pts_to_info(pta_graph, index_to_id_map)

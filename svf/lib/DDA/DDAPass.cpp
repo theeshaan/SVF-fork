@@ -32,9 +32,10 @@
 #include "DDA/FlowDDA.h"
 #include "MemoryModel/PointerAnalysisImpl.h"
 #include "Util/Options.h"
-// E: Added these includes
-#include "MemoryModel/PointerAnalysis.h"
-#include <Graphs/ConsG.h>
+// // E: Added these includes
+// #include "MemoryModel/PointerAnalysis.h"
+// #include "Util/SVFUtil.h"
+// #include <Graphs/ConsG.h>
 
 #include <limits.h>
 #include <sstream>
@@ -106,47 +107,47 @@ void DDAPass::selectClient()
     _client->initialise();
 }
 
-// E: Below function is added by me (Eshaan)
-/// Dump complete context-sensitive points-to information
-void dumpContextSensitiveData(ContextDDA* pta)
-{
-    if (!pta)
-        return;
-    // 1. Access the underlying mutable points-to data structure
-    auto* mutPTData = pta->getMutPTDataTy();
-    if (!mutPTData)
-    {
-        SVFUtil::outs() << "Error: No mutable points-to data found.\n";
-        return;
-    }
-    // 2. Access the internal map: Key -> DataSet
-    // Key: CxtVar (CondVar<ContextCond>) i.e., pair of (Context, VariableID)
-    // DataSet: CxtPtSet (CondStdSet<CondVar<ContextCond>>)
-    const auto& ptsMap = mutPTData->getPtsMap();
-    SVFUtil::outs()
-        << "\n\n/***********************************************************\n";
-    SVFUtil::outs() << " * Context-Sensitive Points-To Data Dump\n";
-    SVFUtil::outs()
-        << " ***********************************************************/\n";
-    for (const auto& entry : ptsMap)
-    {
-        const CxtVar& key = entry.first;
-        // const CxtPtSet& ptsSet = entry.second;
-        // Extract context and variable ID
-        NodeID varId = key.get_id();
-        const CxtPtSet& pts = pta->getCondPointsTo(varId);
-        CxtPtSet cpts;
-        pta->expandFIObjs(pts, cpts);
-        // Print the results
-        SVFUtil::outs() << "Variable " << varId << " points to:\n";
-        for (const auto& c : cpts)
-        {
-            SVFUtil::outs() << "  " << c << "\n";
-        }
-    }
-    SVFUtil::outs()
-        << "***********************************************************/\n\n";
-}
+// // E: Below function is added by me (Eshaan)
+// /// Dump complete context-sensitive points-to information
+// void dumpContextSensitiveData(ContextDDA* pta)
+// {
+//     if (!pta)
+//         return;
+//     // 1. Access the underlying mutable points-to data structure
+//     auto* mutPTData = pta->getMutPTDataTy();
+//     if (!mutPTData)
+//     {
+//         SVFUtil::outs() << "Error: No mutable points-to data found.\n";
+//         return;
+//     }
+//     // 2. Access the internal map: Key -> DataSet
+//     // Key: CxtVar (CondVar<ContextCond>) i.e., pair of (Context, VariableID)
+//     // DataSet: CxtPtSet (CondStdSet<CondVar<ContextCond>>)
+//     const auto& ptsMap = mutPTData->getPtsMap();
+//     SVFUtil::outs()
+//         << "\n\n/***********************************************************\n";
+//     SVFUtil::outs() << " * Context-Sensitive Points-To Data Dump\n";
+//     SVFUtil::outs()
+//         << " ***********************************************************/\n";
+//     for (const auto& entry : ptsMap)
+//     {
+//         const CxtVar& key = entry.first;
+//         // const CxtPtSet& ptsSet = entry.second;
+//         // Extract context and variable ID
+//         NodeID varId = key.get_id();
+//         const CxtPtSet& pts = pta->getCondPointsTo(varId);
+//         CxtPtSet cpts;
+//         pta->expandFIObjs(pts, cpts);
+//         // Print the results
+//         SVFUtil::outs() << "Variable " << varId << " points to:\n";
+//         for (const auto& c : cpts)
+//         {
+//             SVFUtil::outs() << "  " << c << "\n";
+//         }
+//     }
+//     SVFUtil::outs()
+//         << "***********************************************************/\n\n";
+// }
 
 /// Create pointer analysis according to specified kind and analyze the module.
 void DDAPass::runPointerAnalysis(SVFIR* pag, u32_t kind)
@@ -188,12 +189,12 @@ void DDAPass::runPointerAnalysis(SVFIR* pag, u32_t kind)
         {
             _pta->dumpCPts();
 
-            // E:--- ADDED THIS BLOCK ---
-            if (auto* contextDDA = SVFUtil::dyn_cast<ContextDDA>(_pta.get()))
-            {
-                dumpContextSensitiveData(contextDDA);
-            }
-            // ----------------------
+            // // E:--- ADDED THIS BLOCK ---
+            // if (auto* contextDDA = SVFUtil::dyn_cast<ContextDDA>(_pta.get()))
+            // {
+            //     dumpContextSensitiveData(contextDDA);
+            // }
+            // // ----------------------
         }
         if (_pta->printStat())
             _client->performStat(_pta.get());
@@ -364,6 +365,7 @@ void DDAPass::collectCxtInsenEdgeForVFCycle(PointerAnalysis* pta,
 
 AliasResult DDAPass::alias(NodeID node1, NodeID node2)
 {
+    SVFUtil::outs() << "DDAPass::alias Got called with " << node1 << " and " << node2 << "\n";
     SVFIR* pag = _pta->getPAG();
 
     if (pag->isValidTopLevelPtr(pag->getGNode(node1)))

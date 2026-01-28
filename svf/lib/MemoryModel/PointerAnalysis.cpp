@@ -517,6 +517,7 @@ void PointerAnalysis::validateSuccessTests(std::string fun)
                 const SVFVar* V1 = callNode->getArgument(0);
                 const SVFVar* V2 = callNode->getArgument(1);
                 AliasResult aliasRes = alias(V1->getId(), V2->getId());
+                // SVFUtil::outs() << "PointerAnalysis.cpp:520, got called with " << V1->getId() << " and " << V2->getId() << "\n";
 
                 bool checkSuccessful = false;
                 if (fun == aliasTestMayAlias || fun == aliasTestMayAliasMangled)

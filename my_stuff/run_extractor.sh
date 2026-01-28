@@ -16,9 +16,9 @@ function run_base(){
     "$LLVM_PATH/opt" -S -passes='internalize,globaldce,early-cse' -internalize-public-api-list=main $filepath.bc -o $filepath.opt.bc
     # 3. Run dvf/wpa on the optimized bitcode
     echo "Processing $file with DVF"
-    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -dump-callgraph -max-cxt=3 -flow-bg=10000 -cxt-bg=10000 $filepath.opt.bc > $filepath.pta
+    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -print-pag -dump-callgraph -max-cxt=3 -flow-bg=10000 -cxt-bg=10000 $filepath.opt.bc > $filepath.pta
     # echo "Processing $file with SVF flags: $SVF_PTA_FLAG"
-    # "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -dump-callgraph $filepath.opt.bc > $filepath.pta;
+    # "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -print-pag -dump-callgraph $filepath.opt.bc > $filepath.pta;
     python3 extractor.py $filepath;
     # rm $filepath.pta;
     rm $filepath.bc

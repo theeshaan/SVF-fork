@@ -1,3 +1,27 @@
+-------------------SVFIR------------------------------------
+3 -- Addr --> 10
+3 -- Addr --> 34
+5 -- Addr --> 4
+9 -- Addr --> 8
+15 -- Addr --> 14
+21 -- Addr --> 20
+24 -- Addr --> 23
+26 -- Addr --> 25
+28 -- Addr --> 27
+30 -- Addr --> 29
+32 -- Addr --> 31
+46 -- Addr --> 45
+0 -- Copy --> 1
+25 -- Call --> 7
+27 -- Call --> 7
+6 -- Ret --> 38
+6 -- Ret --> 41
+29 -- Load --> 43
+7 -- Store --> 8
+34 -- Store --> 23
+38 -- Store --> 29
+41 -- Store --> 31
+----------------------------------------------------------
 Writing 'callgraph_initial.dot'...
 Writing 'callgraph_initial.dot'...
 
@@ -33,7 +57,7 @@ TotalSVFStmts       24
 VarArrayObj         0
 VarStructObj        2
 ----------------Time and memory stats--------------------
-LLVMIRTime          0.011
+LLVMIRTime          0.01
 SVFIRTime           0.001
 SymbolTableTime     0
 #######################################################
@@ -66,7 +90,7 @@ MemoryUsageVmrss    572
 MemoryUsageVmsize   0
 SCCDetectTime       0
 SCCMergeTime        0
-TotalTime           0.001
+TotalTime           0
 UpdateCGTime        0
 ----------------Numbers stats----------------------------
 AddrProcessed       12
@@ -558,7 +582,7 @@ AvgPtsSize          1.0625
 AvgTimePerQuery     0
 MemoryUsageVmrss    0
 MemoryUsageVmsize   0
-TotalBKCondTime     0
+TotalBKCondTime     4.75576e-313
 TotalQueryTime      0
 ----------------Numbers stats----------------------------
 IndEdgeSolved       0
@@ -599,43 +623,3 @@ Writing 'callgraph_final.dot'...
 <29 [: ]>  ==> { <30 [: ]>  }
 <31 [: ]>  ==> { <32 [: ]>  }
 <38 [: ]>  ==> { <26 [: ]>  }
-
-
-/***********************************************************
- * Context-Sensitive Points-To Data Dump
- ***********************************************************/
-Variable 45 points to:
-  <46 [: ]> 
-Variable 43 points to:
-  <26 [: ]> 
-Variable 41 points to:
-  <28 [: ]> 
-Variable 0 points to:
-Variable 4 points to:
-  <5 [: ]> 
-Variable 6 points to:
-  <26 [: ]> 
-  <28 [: ]> 
-Variable 7 points to:
-  <26 [: ]> 
-  <28 [: ]> 
-Variable 8 points to:
-  <9 [: ]> 
-Variable 14 points to:
-  <15 [: ]> 
-Variable 20 points to:
-  <21 [: ]> 
-Variable 23 points to:
-  <24 [: ]> 
-Variable 25 points to:
-  <26 [: ]> 
-Variable 27 points to:
-  <28 [: ]> 
-Variable 29 points to:
-  <30 [: ]> 
-Variable 31 points to:
-  <32 [: ]> 
-Variable 38 points to:
-  <26 [: ]> 
-***********************************************************/
-

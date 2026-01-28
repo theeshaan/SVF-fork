@@ -1,5 +1,3 @@
-extern void NOALIAS(void*,void*);
-
 struct Obj {
     int value;
 };
@@ -15,7 +13,6 @@ int main() {
 
     Obj* pa = id(&a);  // Call context 1
     Obj* pb = id(&b);  // Call context 2
-NOALIAS(pa,pb);
 
     return 0;
 }
