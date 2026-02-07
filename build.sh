@@ -41,6 +41,7 @@ Z3Home="z3.obj"
 
 
 # Parse arguments
+SVF_ENABLE_LHF_CUSTOMIZATIONS='OFF'
 BUILD_TYPE='Release'
 BUILD_DYN_LIB='ON'
 RTTI='ON'
@@ -56,6 +57,9 @@ for arg in "$@"; do
     fi
     if [[ $arg =~ ^[Nn]ortti$ ]]; then
         RTTI='OFF'
+    fi
+    if [[ $arg =~ ^[Ll]hfcustom$ ]]; then
+        SVF_ENABLE_LHF_CUSTOMIZATIONS='ON'
     fi
 done
 # if static is off (shared lib), rtti is always on, but print a warning if rtti is off
@@ -296,10 +300,11 @@ BUILD_DIR="./${BUILD_TYPE}-build"
 rm -rf "${BUILD_DIR}"
 mkdir "${BUILD_DIR}"
 # If you need shared libs, turn BUILD_SHARED_LIBS on
-cmake -D CMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}"   \
-    -DSVF_ENABLE_ASSERTIONS:BOOL=true              \
-    -DSVF_SANITIZE="${SVF_SANITIZER}"              \
-    -DBUILD_SHARED_LIBS=${BUILD_DYN_LIB}            \
+cmake -D CMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}"             \
+    -DSVF_ENABLE_ASSERTIONS:BOOL=true                        \
+    -DSVF_SANITIZE="${SVF_SANITIZER}"                        \
+    -DBUILD_SHARED_LIBS=${BUILD_DYN_LIB}                     \
+    -DSVF_ENABLE_LHF_CUSTOMIZATIONS=${SVF_ENABLE_LHF_CUSTOMIZATIONS} \
     -S "${SVFHOME}" -B "${BUILD_DIR}"
 cmake --build "${BUILD_DIR}" -j ${jobs}
 

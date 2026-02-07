@@ -93,6 +93,7 @@ option(SVF_EXPORT_DYNAMIC "Export all (not only the actually used) symbols to dy
 option(SVF_ENABLE_ASSERTIONS "Always enable debugging assertions, also if the build type is a release build")
 option(SVF_ENABLE_RTTI "Adds -fno-rtti to disable runtime type information (RTTI)" ON)
 option(SVF_ENABLE_EXCEPTIONS "Adds -fno-exceptions to disable exception handling" ON)
+option(SVF_ENABLE_MDE_CUSTOMIZATIONS "Enables Modifications made for MDE" OFF)
 
 # If building dynamic libraries, always enable PIC
 if(SVF_SHARED_LIBS AND NOT SVF_USE_PIC)
@@ -191,6 +192,7 @@ message(
   SVF option - Generating debug information:        ${SVF_WARN_AS_ERROR}
   SVF option - Exporting all dynamic symbols:       ${SVF_EXPORT_DYNAMIC}
   SVF option - Forcefully enabling assertions:      ${SVF_ENABLE_ASSERTIONS}
+  SVF option - Enable MDE-based customizations:     ${SVF_ENABLE_MDE_CUSTOMIZATIONS}
 
   CMake root directory:                             ${CMAKE_SOURCE_DIR}
   CMake binary directory:                           ${CMAKE_BINARY_DIR}
@@ -259,7 +261,10 @@ target_link_directories(
 )
 
 # Expose build-tree extapi.bc to in-tree users of SVF (i.e. building SVF as subproject)
-target_compile_definitions(SvfFlags INTERFACE $<BUILD_INTERFACE:SVF_INSTALL_EXTAPI_BC="${SVF_BUILD_EXTAPI_BC}">)
+target_compile_definitions(SvfFlags
+  INTERFACE $<BUILD_INTERFACE:$<$<BOOL:${SVF_ENABLE_MDE_CUSTOMIZATIONS}>:SVF_ENABLE_MDE_CUSTOMIZATIONS>>
+  INTERFACE $<BUILD_INTERFACE:SVF_INSTALL_EXTAPI_BC="${SVF_BUILD_EXTAPI_BC}">
+)
 
 # Add Z3 as a public dependency on the interface to ensure any users inherit the dependency
 target_link_libraries(SvfFlags INTERFACE ${Z3_LIBRARIES})
