@@ -1,12 +1,11 @@
 # A utility to parse SVF output and print source variables' points-to information on the terminal
-# Based on Chaitanya's exporter.py
-# Started on 29-12-25
 import argparse
 import re
 from collections import defaultdict
 from pathlib import Path
 import subprocess
 import shutil
+import copy
 
 def parse_pta_input(file_path):
     # token map gives info about a token given the token's id (info = (name, file, line))
@@ -30,22 +29,19 @@ def parse_pta_input(file_path):
     for lhs, rhs in matches:
         graph[int(lhs)] = {int(x) for x in re.findall(r"<(\d+)", rhs)}
 
-    # print("Graph1")
-    # print(graph)
-    # print()
-
+    # print("Before processing PTA:")
+    # for k, v in graph.items():
+    #     print(f"Node {k}: {v}")
 
     # Parse the PTA, specifically store edges, to match pointers to variables stored in them
     matches = re.findall(r"(\d+)\s*-- Store -->\s*(\d+)", content)
 
-    temp_graph = graph.copy()
+    temp_graph = copy.deepcopy(graph)
 
     for match in matches:
         source, variable = match # the source is being stored into the variable
         source = int(source)
         variable = int(variable)
-        if source not in token_map or variable not in token_map:
-            continue # irrelevant tokens
         if variable not in graph:
             graph[variable] = set()
             temp_graph[variable] = set()
@@ -54,13 +50,17 @@ def parse_pta_input(file_path):
             temp_graph[source] = set()
         # If the variable currently points to only one node and that node is the same as the variable
         # then we can just update the variable's pointee set to the source's pointee set
-        if len(graph[variable]) == 1 and token_map[list(graph[variable])[0]][0] == token_map[variable][0]:
-            temp_graph[variable] = graph[source]
+        if len(temp_graph[variable]) == 1 and token_map[list(temp_graph[variable])[0]][0] == token_map[variable][0]:
+            temp_graph[variable] = graph[source].copy()
         else:
             # TODO: Check how the existing pointee set of a variable should be merged with
             # the new info we get from here (for now I'm just appending to the existing info)
             temp_graph[variable].update(graph[source])
     graph = temp_graph
+
+    # print("After processing PTA:")
+    # for k, v in graph.items():
+    #     print(f"Node {k}: {v}")
 
     # # TODO: VERY IMPORTANT: check if below line (deleting the source from the graph)
     # # is correct
@@ -68,10 +68,6 @@ def parse_pta_input(file_path):
     #     source,variable = match
     #     if source in graph:
     #         graph.pop(source)
-
-    # print("Graph2")
-    # print(graph)
-    # print()
 
     return graph, token_map
 
@@ -92,13 +88,12 @@ def demangle(name):
 
 def parse_callgraph_dot(dot_file_path):
     func_map = {}
-    call_graph = defaultdict(set)
 
     # Regex for CallGraphNode in callgraph_final.dot
     node_re = re.compile(r'Node(?P<id>0x[0-9a-f]+)\s+\[.*?label="\{CallGraphNode ID: (?P<node_id>\d+) \\{fun: (?P<func_name>.*?)\\}.*?"\];')
     
     if not Path(dot_file_path).exists():
-        return call_graph, {}
+        return {}
 
     with open(dot_file_path, 'r') as f:
         for line in f:
@@ -109,7 +104,7 @@ def parse_callgraph_dot(dot_file_path):
                 # Map mangled name to demangled name
                 func_map[func_name] = demangled_name
 
-    return call_graph, func_map
+    return func_map
 
 
 def remove_dead_nodes(graph, token_map):
@@ -359,7 +354,7 @@ if __name__ == "__main__":
     pta_graph, token_map = parse_pta_input(pta_file)
     
     dot_file = "callgraph_final.dot" # Parse callgraph to get function names
-    call_graph, func_name_map = parse_callgraph_dot(dot_file) # func_name_map just maps mangled function names to demangled names. The purpose of this function is just to identify the functions present in the program   
+    func_name_map = parse_callgraph_dot(dot_file) # func_name_map just maps mangled function names to demangled names. The purpose of this function is just to identify the functions present in the program   
     token_map = map_variables_to_functions(token_map, func_name_map)
     remove_dead_nodes(pta_graph, token_map)
     remove_stl_pointers(pta_graph, token_map) # seems a bit scammy, check this out carefully

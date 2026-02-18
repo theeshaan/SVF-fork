@@ -5,4 +5,5 @@ void t4()
     int* p = &x;
     int* q = &y;
     q = p;
+    
 }

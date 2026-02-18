@@ -8,6 +8,8 @@ SVF_PTA_FLAG="-ander"
 
 SVF_PATH=""
 LLVM_PATH=""
+MAX_CXT=5 # max callstrings length for context-sensitive analysis
+
 
 function run_base(){
     filepath="$1"
@@ -18,10 +20,10 @@ function run_base(){
     # so I removed those passes to maintain soundness
     # However, I am keeping a early-cse pass to convert the flow-insensitive output of SVF
     # into a partially flow-sensitive one
-    "$LLVM_PATH/opt" -S -passes='early-cse' $filepath.bc -o $filepath.opt.bc
+    "$LLVM_PATH/opt" -passes='early-cse' $filepath.bc -o $filepath.opt.bc
     # Run dvf/wpa on the optimized bitcode
     echo "Processing $file with DVF"
-    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -print-pag -dump-callgraph -max-cxt=5 -flow-bg=10000 -cxt-bg=10000 $filepath.opt.bc > $filepath.pta
+    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -print-pag -dump-callgraph -max-cxt=$MAX_CXT -flow-bg=10000 -cxt-bg=10000 $filepath.opt.bc > $filepath.pta
     # echo "Processing $file with SVF flags: $SVF_PTA_FLAG"
     # "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -print-pag -dump-callgraph $filepath.opt.bc > $filepath.pta;
     python3 extractor.py $filepath;
@@ -109,6 +111,7 @@ function usage() {
     echo "Options:"
     echo "  --svf-path     Path to SVF build/bin directory (required)"
     echo "  --llvm-path    Path to LLVM build/bin directory (required for .c and .ll)"
+    echo "  --max-cxt      Maximum callstrings length for context-sensitive analysis (optional, default: 5)"
     echo "  SVF_FLAG       One of the following (optional, default: -ander):"
     for flag in "${SVF_PTA_FLAGS[@]}"; do
         echo "    $flag"
@@ -142,7 +145,11 @@ while [[ $# -gt 0 ]]; do
             LLVM_PATH="$2"
             shift 2
             ;;
-        -*)
+        --max-cxt)
+            MAX_CXT="$2"
+            shift 2
+            ;;
+        -* )
             if validate_flag "$1"; then
                 SVF_PTA_FLAG="$1"
                 shift
@@ -157,6 +164,10 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Remove trailing slashes from SVF_PATH and LLVM_PATH if present
+SVF_PATH="${SVF_PATH%/}"
+LLVM_PATH="${LLVM_PATH%/}"
 
 # Restore positional arguments
 set -- "${args[@]}"

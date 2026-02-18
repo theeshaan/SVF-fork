@@ -2,6 +2,6 @@
 #include <stdlib.h>
 void t9()
 {
-    int* p = malloc(sizeof(int));
+    int* p = (int*) malloc(sizeof(int));
     int* q = p;
 }

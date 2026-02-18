@@ -1,4 +1,4 @@
-// Function pointers
+// Function pointers and conditional assignment
 void f(int* p) {}
 void g(int* p) {}
 

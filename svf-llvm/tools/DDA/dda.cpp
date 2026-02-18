@@ -47,7 +47,6 @@ static Option<bool> DAA(
 
 int main(int argc, char ** argv)
 {
-    std::cout << "Eshaan: printed first" << std::endl;
     std::vector<std::string> moduleNameVec;
     moduleNameVec = OptionBase::parseOptions(
                         argc, argv, "Demand-Driven Points-to Analysis", "[options] <input-bitcode...>"

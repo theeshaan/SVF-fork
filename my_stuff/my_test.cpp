@@ -1,18 +1,12 @@
-// A program to test the precision loss due to callstrings length limit in SVF
+// Pointer aliasing
 
-struct Obj {int value;};
+extern void MUSTALIAS(void*,void*);
 
-Obj* id5(Obj* in) {return in;}
-Obj* id4(Obj* in) {return id5(in);}
-Obj* id3(Obj* in) {return id4(in);}
-Obj* id2(Obj* in) {return id3(in);}
-Obj* id1(Obj* in) {return id2(in);}
-
-int main()
+void t4()
 {
-    Obj a;
-    Obj b;
-
-    Obj* pa = id1(&a);  // Call context 1
-    Obj* pb = id1(&b);  // Call context 2
+    int x, y;
+    int* p = &x;
+    int* q = &y;
+    q = p;
+    MUSTALIAS(p, q);
 }
