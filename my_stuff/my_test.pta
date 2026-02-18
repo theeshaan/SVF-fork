@@ -1,63 +1,82 @@
+Eshaan: printed first
 -------------------SVFIR------------------------------------
 3 -- Addr --> 10
-3 -- Addr --> 34
+3 -- Addr --> 80
 5 -- Addr --> 4
 9 -- Addr --> 8
 15 -- Addr --> 14
 21 -- Addr --> 20
-24 -- Addr --> 23
-26 -- Addr --> 25
-28 -- Addr --> 27
-30 -- Addr --> 29
-32 -- Addr --> 31
-46 -- Addr --> 45
+25 -- Addr --> 24
+31 -- Addr --> 30
+35 -- Addr --> 34
+41 -- Addr --> 40
+45 -- Addr --> 44
+51 -- Addr --> 50
+55 -- Addr --> 54
+61 -- Addr --> 60
+64 -- Addr --> 63
+66 -- Addr --> 65
+68 -- Addr --> 67
+70 -- Addr --> 69
 0 -- Copy --> 1
-25 -- Call --> 7
-27 -- Call --> 7
-6 -- Ret --> 38
-6 -- Ret --> 41
-29 -- Load --> 43
+23 -- Call --> 7
+33 -- Call --> 23
+43 -- Call --> 33
+53 -- Call --> 43
+63 -- Call --> 53
+65 -- Call --> 53
+6 -- Ret --> 28
+22 -- Ret --> 38
+32 -- Ret --> 48
+42 -- Ret --> 58
+52 -- Ret --> 74
+52 -- Ret --> 77
 7 -- Store --> 8
-34 -- Store --> 23
-38 -- Store --> 29
-41 -- Store --> 31
+23 -- Store --> 24
+33 -- Store --> 34
+43 -- Store --> 44
+53 -- Store --> 54
+74 -- Store --> 67
+77 -- Store --> 69
 ----------------------------------------------------------
+Eshaan: printed second
+Eshaan: printed third
 Writing 'callgraph_initial.dot'...
 Writing 'callgraph_initial.dot'...
 
 *********General Stats***************
 ################ (program : my_test.opt.bc)###############
-AddrsNum            12
+AddrsNum            18
 BBWith2Succ         0
 BBWith3Succ         0
-CallsNum            2
+CallsNum            6
 ConstArrayObj       0
 ConstStructObj      0
 ConstantObj         0
 CopysNum            1
-FIObjNum            5
-FSObjNum            6
-FunctionObjs        4
+FIObjNum            8
+FSObjNum            9
+FunctionObjs        7
 GepsNum             0
 GlobalObjs          0
 HeapObjs            1
 IndCallSites        0
-LoadsNum            1
+LoadsNum            0
 MaxStructSize       1
-NonPtrObj           8
-ReturnsNum          2
-StackObjs           6
-StoresNum           4
-TotalCallSite       3
+NonPtrObj           10
+ReturnsNum          6
+StackObjs           9
+StoresNum           7
+TotalCallSite       6
 TotalFieldObjects   0
-TotalObjects        12
-TotalPTASVFStmts    22
-TotalPointers       39
-TotalSVFStmts       24
+TotalObjects        18
+TotalPTASVFStmts    43
+TotalPointers       63
+TotalSVFStmts       44
 VarArrayObj         0
 VarStructObj        2
 ----------------Time and memory stats--------------------
-LLVMIRTime          0.01
+LLVMIRTime          0.009
 SVFIRTime           0.001
 SymbolTableTime     0
 #######################################################
@@ -69,73 +88,73 @@ CalRetPairInCycle   0
 MaxNodeInCycle      0
 NodeInCycle         0
 TotalCycle          0
-TotalEdge           3
-TotalNode           4
+TotalEdge           6
+TotalNode           7
 #######################################################
 
 *********Andersen Pointer Analysis Stats***************
 ################ (program : my_test.opt.bc)###############
 ----------------Time and memory stats--------------------
-AvgIn/OutAddrEdge   0.4
-AvgIn/OutCopyEdge   0.333333
-AvgIn/OutEdge       0.866667
-AvgIn/OutLoadEdge   0.0333333
-AvgIn/OutStoreEdge  0.1
-AvgPtsSetSize       0.54902
-AvgTopLvlPtsSize    1.25
+AvgIn/OutAddrEdge   0.339623
+AvgIn/OutCopyEdge   0.471698
+AvgIn/OutEdge       0.943396
+AvgIn/OutLoadEdge   0
+AvgIn/OutStoreEdge  0.132075
+AvgPtsSetSize       0.790123
+AvgTopLvlPtsSize    1.45455
 CollapseTime        0
 CopyGepTime         0
 LoadStoreTime       0
-MemoryUsageVmrss    572
+MemoryUsageVmrss    524
 MemoryUsageVmsize   0
 SCCDetectTime       0
 SCCMergeTime        0
 TotalTime           0
 UpdateCGTime        0
 ----------------Numbers stats----------------------------
-AddrProcessed       12
-CopyProcessed       10
+AddrProcessed       18
+CopyProcessed       29
 DummyFieldPtrs      0
 FieldObjs           0
 GepProcessed        0
 IndCallSites        0
 IndEdgeSolved       0
-LoadProcessed       1
+LoadProcessed       0
 LocalVarInRecur     0
 MaxInAddrEdge       1
 MaxInCopyEdge       2
-MaxInLoadEdge       1
+MaxInLoadEdge       0
 MaxInStoreEdge      1
 MaxNodesInSCC       0
 MaxOutAddrEdge      2
 MaxOutCopyEdge      2
-MaxOutLoadEdge      1
+MaxOutLoadEdge      0
 MaxOutStoreEdge     1
 MaxPtsSetSize       2
-MemObjects          12
+MemObjects          18
 NodesInCycles       0
 NullPointer         0
-NumOfAddrs          12
-NumOfCGEdge         14
-NumOfCGNode         33
-NumOfCopys          10
+NumOfAddrs          18
+NumOfCGEdge         32
+NumOfCGNode         54
+NumOfCopys          25
 NumOfFieldExpand    0
 NumOfGeps           0
-NumOfLoads          1
+NumOfLoads          0
 NumOfSCCDetect      2
 NumOfSFRs           0
-NumOfStores         3
-NumOfValidNode      30
-NumOfValidObjNode   11
-Pointers            39
+NumOfStores         7
+NumOfValidNode      53
+NumOfValidObjNode   17
+Pointers            63
 PointsToBlkPtr      0
 PointsToConstPtr    0
 SolveIterations     2
-StoreProcessed      3
+StoreProcessed      7
 TotalCycleNum       0
-TotalObjects        12
+TotalObjects        18
 TotalPWCCycleNum    0
-TotalPointers       39
+TotalPointers       63
 #######################################################
 ----------------------------------------------
 ##<> Source Loc: { constant data }
@@ -154,37 +173,37 @@ Ptr 2 		PointsTo: {empty}
 Ptr 3 		PointsTo: {empty}
 
 ----------------------------------------------
-##<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+##<_Z3id5P3Obj> Source Loc: { "ln": 5, "file": "my_test.cpp" }
 Ptr 4 		PointsTo: { 5 }
 
-!!Target NodeID 5	 [<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }] 
+!!Target NodeID 5	 [<_Z3id5P3Obj> Source Loc: { "ln": 5, "file": "my_test.cpp" }] 
 ----------------------------------------------
-##<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+##<_Z3id5P3Obj> Source Loc: { "ln": 5, "file": "my_test.cpp" }
 Ptr 5 		PointsTo: {empty}
 
 ----------------------------------------------
-##<_Z2idP3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
-Ptr 6 		PointsTo: { 26 28 }
+##<_Z3id5P3Obj> Source Loc: { "ln": 5, "file": "my_test.cpp" }
+Ptr 6 		PointsTo: { 64 66 }
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<p> Source Loc: { 0th arg _Z2idP3Obj "ln": 7, "file": "my_test.cpp" }
-Ptr 7 		PointsTo: { 26 28 }
+##<in> Source Loc: { 0th arg _Z3id5P3Obj "ln": 5, "file": "my_test.cpp" }
+Ptr 7 		PointsTo: { 64 66 }
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<p.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }
+##<in.addr> Source Loc: { "ln": 5, "fl": "my_test.cpp" }
 Ptr 8 		PointsTo: { 9 }
 
-!!Target NodeID 9	 [<p.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }] 
+!!Target NodeID 9	 [<in.addr> Source Loc: { "ln": 5, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<p.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }
-Ptr 9 		PointsTo: { 26 28 }
+##<in.addr> Source Loc: { "ln": 5, "fl": "my_test.cpp" }
+Ptr 9 		PointsTo: { 64 66 }
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
 ##<> Source Loc: { constant data }
 Ptr 10 		PointsTo: { 3 }
@@ -195,11 +214,11 @@ Ptr 10 		PointsTo: { 3 }
 Ptr 11 		PointsTo: {empty}
 
 ----------------------------------------------
-##<> Source Loc: { "ln": 7, "cl": 14, "fl": "my_test.cpp" }
+##<> Source Loc: { "ln": 5, "cl": 15, "fl": "my_test.cpp" }
 Ptr 12 		PointsTo: {empty}
 
 ----------------------------------------------
-##<> Source Loc: { "ln": 9, "cl": 5, "fl": "my_test.cpp" }
+##<> Source Loc: { "ln": 5, "cl": 20, "fl": "my_test.cpp" }
 Ptr 13 		PointsTo: {empty}
 
 ----------------------------------------------
@@ -228,165 +247,321 @@ Ptr 18 		PointsTo: {empty}
 Ptr 19 		PointsTo: {empty}
 
 ----------------------------------------------
-##<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }
+##<_Z3id4P3Obj> Source Loc: { "ln": 6, "file": "my_test.cpp" }
 Ptr 20 		PointsTo: { 21 }
 
-!!Target NodeID 21	 [<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }] 
+!!Target NodeID 21	 [<_Z3id4P3Obj> Source Loc: { "ln": 6, "file": "my_test.cpp" }] 
 ----------------------------------------------
-##<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }
+##<_Z3id4P3Obj> Source Loc: { "ln": 6, "file": "my_test.cpp" }
 Ptr 21 		PointsTo: {empty}
 
 ----------------------------------------------
-##<main> Source Loc: { "ln": 12, "file": "my_test.cpp" }
-Ptr 22 		PointsTo: {empty}
+##<_Z3id4P3Obj> Source Loc: { "ln": 6, "file": "my_test.cpp" }
+Ptr 22 		PointsTo: { 64 66 }
 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<retval> Source Loc: 
-Ptr 23 		PointsTo: { 24 }
+##<in> Source Loc: { 0th arg _Z3id4P3Obj "ln": 6, "file": "my_test.cpp" }
+Ptr 23 		PointsTo: { 64 66 }
 
-!!Target NodeID 24	 [<retval> Source Loc: ] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<retval> Source Loc: 
-Ptr 24 		PointsTo: {empty}
+##<in.addr> Source Loc: { "ln": 6, "fl": "my_test.cpp" }
+Ptr 24 		PointsTo: { 25 }
 
+!!Target NodeID 25	 [<in.addr> Source Loc: { "ln": 6, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }
-Ptr 25 		PointsTo: { 26 }
+##<in.addr> Source Loc: { "ln": 6, "fl": "my_test.cpp" }
+Ptr 25 		PointsTo: { 64 66 }
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }
+##<> Source Loc: 
 Ptr 26 		PointsTo: {empty}
 
 ----------------------------------------------
-##<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }
-Ptr 27 		PointsTo: { 28 }
-
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
-----------------------------------------------
-##<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }
-Ptr 28 		PointsTo: {empty}
+##<> Source Loc: { "ln": 6, "cl": 15, "fl": "my_test.cpp" }
+Ptr 27 		PointsTo: {empty}
 
 ----------------------------------------------
-##<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }
-Ptr 29 		PointsTo: { 30 }
+##<call> Source Loc: { "ln": 6, "cl": 27, "fl": "my_test.cpp" }
+Ptr 28 		PointsTo: { 64 66 }
 
-!!Target NodeID 30	 [<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }
-Ptr 30 		PointsTo: { 26 28 }
+##<> Source Loc: { "ln": 6, "cl": 20, "fl": "my_test.cpp" }
+Ptr 29 		PointsTo: {empty}
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }
-Ptr 31 		PointsTo: { 32 }
+##<_Z3id3P3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+Ptr 30 		PointsTo: { 31 }
 
-!!Target NodeID 32	 [<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }] 
+!!Target NodeID 31	 [<_Z3id3P3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }] 
 ----------------------------------------------
-##<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }
-Ptr 32 		PointsTo: { 26 28 }
+##<_Z3id3P3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+Ptr 31 		PointsTo: {empty}
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<_Z3id3P3Obj> Source Loc: { "ln": 7, "file": "my_test.cpp" }
+Ptr 32 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<in> Source Loc: { 0th arg _Z3id3P3Obj "ln": 7, "file": "my_test.cpp" }
+Ptr 33 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<in.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }
+Ptr 34 		PointsTo: { 35 }
+
+!!Target NodeID 35	 [<in.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<in.addr> Source Loc: { "ln": 7, "fl": "my_test.cpp" }
+Ptr 35 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
 ##<> Source Loc: 
-Ptr 33 		PointsTo: {empty}
-
-----------------------------------------------
-##<> Source Loc: { constant data }
-Ptr 34 		PointsTo: { 3 }
-
-!!Target NodeID 3	 [Dummy Obj id: 3]
-----------------------------------------------
-##<> Source Loc: { "ln": 13, "cl": 9, "fl": "my_test.cpp" }
-Ptr 35 		PointsTo: {empty}
-
-----------------------------------------------
-##<> Source Loc: { "ln": 14, "cl": 9, "fl": "my_test.cpp" }
 Ptr 36 		PointsTo: {empty}
 
 ----------------------------------------------
-##<> Source Loc: { "ln": 16, "cl": 10, "fl": "my_test.cpp" }
+##<> Source Loc: { "ln": 7, "cl": 15, "fl": "my_test.cpp" }
 Ptr 37 		PointsTo: {empty}
 
 ----------------------------------------------
-##<call> Source Loc: { "ln": 16, "cl": 15, "fl": "my_test.cpp" }
-Ptr 38 		PointsTo: { 26 28 }
+##<call> Source Loc: { "ln": 7, "cl": 27, "fl": "my_test.cpp" }
+Ptr 38 		PointsTo: { 64 66 }
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<> Source Loc: { "ln": 16, "cl": 10, "fl": "my_test.cpp" }
+##<> Source Loc: { "ln": 7, "cl": 20, "fl": "my_test.cpp" }
 Ptr 39 		PointsTo: {empty}
 
 ----------------------------------------------
-##<> Source Loc: { "ln": 17, "cl": 10, "fl": "my_test.cpp" }
-Ptr 40 		PointsTo: {empty}
+##<_Z3id2P3Obj> Source Loc: { "ln": 8, "file": "my_test.cpp" }
+Ptr 40 		PointsTo: { 41 }
+
+!!Target NodeID 41	 [<_Z3id2P3Obj> Source Loc: { "ln": 8, "file": "my_test.cpp" }] 
+----------------------------------------------
+##<_Z3id2P3Obj> Source Loc: { "ln": 8, "file": "my_test.cpp" }
+Ptr 41 		PointsTo: {empty}
 
 ----------------------------------------------
-##<call1> Source Loc: { "ln": 17, "cl": 15, "fl": "my_test.cpp" }
-Ptr 41 		PointsTo: { 26 28 }
+##<_Z3id2P3Obj> Source Loc: { "ln": 8, "file": "my_test.cpp" }
+Ptr 42 		PointsTo: { 64 66 }
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<> Source Loc: { "ln": 17, "cl": 10, "fl": "my_test.cpp" }
-Ptr 42 		PointsTo: {empty}
+##<in> Source Loc: { 0th arg _Z3id2P3Obj "ln": 8, "file": "my_test.cpp" }
+Ptr 43 		PointsTo: { 64 66 }
 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<> Source Loc: { "ln": 18, "cl": 9, "fl": "my_test.cpp" }
-Ptr 43 		PointsTo: { 26 28 }
+##<in.addr> Source Loc: { "ln": 8, "fl": "my_test.cpp" }
+Ptr 44 		PointsTo: { 45 }
 
-!!Target NodeID 26	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
-!!Target NodeID 28	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+!!Target NodeID 45	 [<in.addr> Source Loc: { "ln": 8, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<> Source Loc: { "ln": 18, "cl": 1, "fl": "my_test.cpp" }
-Ptr 44 		PointsTo: {empty}
+##<in.addr> Source Loc: { "ln": 8, "fl": "my_test.cpp" }
+Ptr 45 		PointsTo: { 64 66 }
 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<_Z7NOALIASPvS_> Source Loc: 
-Ptr 45 		PointsTo: { 46 }
-
-!!Target NodeID 46	 [<_Z7NOALIASPvS_> Source Loc: ] 
-----------------------------------------------
-##<_Z7NOALIASPvS_> Source Loc: 
+##<> Source Loc: 
 Ptr 46 		PointsTo: {empty}
 
 ----------------------------------------------
-##<> Source Loc: { "ln": 20, "cl": 5, "fl": "my_test.cpp" }
+##<> Source Loc: { "ln": 8, "cl": 15, "fl": "my_test.cpp" }
 Ptr 47 		PointsTo: {empty}
 
 ----------------------------------------------
-##<_Z7NOALIASPvS_> Source Loc: 
-Ptr 48 		PointsTo: {empty}
+##<call> Source Loc: { "ln": 8, "cl": 27, "fl": "my_test.cpp" }
+Ptr 48 		PointsTo: { 64 66 }
 
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
 ----------------------------------------------
-##<> Source Loc: { 0th arg _Z7NOALIASPvS_  }
+##<> Source Loc: { "ln": 8, "cl": 20, "fl": "my_test.cpp" }
 Ptr 49 		PointsTo: {empty}
 
 ----------------------------------------------
-##<> Source Loc: { 1st arg _Z7NOALIASPvS_  }
-Ptr 50 		PointsTo: {empty}
+##<_Z3id1P3Obj> Source Loc: { "ln": 9, "file": "my_test.cpp" }
+Ptr 50 		PointsTo: { 51 }
 
+!!Target NodeID 51	 [<_Z3id1P3Obj> Source Loc: { "ln": 9, "file": "my_test.cpp" }] 
+----------------------------------------------
+##<_Z3id1P3Obj> Source Loc: { "ln": 9, "file": "my_test.cpp" }
+Ptr 51 		PointsTo: {empty}
+
+----------------------------------------------
+##<_Z3id1P3Obj> Source Loc: { "ln": 9, "file": "my_test.cpp" }
+Ptr 52 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<in> Source Loc: { 0th arg _Z3id1P3Obj "ln": 9, "file": "my_test.cpp" }
+Ptr 53 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<in.addr> Source Loc: { "ln": 9, "fl": "my_test.cpp" }
+Ptr 54 		PointsTo: { 55 }
+
+!!Target NodeID 55	 [<in.addr> Source Loc: { "ln": 9, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<in.addr> Source Loc: { "ln": 9, "fl": "my_test.cpp" }
+Ptr 55 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 56 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 9, "cl": 15, "fl": "my_test.cpp" }
+Ptr 57 		PointsTo: {empty}
+
+----------------------------------------------
+##<call> Source Loc: { "ln": 9, "cl": 27, "fl": "my_test.cpp" }
+Ptr 58 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 9, "cl": 20, "fl": "my_test.cpp" }
+Ptr 59 		PointsTo: {empty}
+
+----------------------------------------------
+##<main> Source Loc: { "ln": 11, "file": "my_test.cpp" }
+Ptr 60 		PointsTo: { 61 }
+
+!!Target NodeID 61	 [<main> Source Loc: { "ln": 11, "file": "my_test.cpp" }] 
+----------------------------------------------
+##<main> Source Loc: { "ln": 11, "file": "my_test.cpp" }
+Ptr 61 		PointsTo: {empty}
+
+----------------------------------------------
+##<main> Source Loc: { "ln": 11, "file": "my_test.cpp" }
+Ptr 62 		PointsTo: {empty}
+
+----------------------------------------------
+##<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }
+Ptr 63 		PointsTo: { 64 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }
+Ptr 64 		PointsTo: {empty}
+
+----------------------------------------------
+##<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }
+Ptr 65 		PointsTo: { 66 }
+
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }
+Ptr 66 		PointsTo: {empty}
+
+----------------------------------------------
+##<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }
+Ptr 67 		PointsTo: { 68 }
+
+!!Target NodeID 68	 [<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<pa> Source Loc: { "ln": 16, "fl": "my_test.cpp" }
+Ptr 68 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }
+Ptr 69 		PointsTo: { 70 }
+
+!!Target NodeID 70	 [<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<pb> Source Loc: { "ln": 17, "fl": "my_test.cpp" }
+Ptr 70 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 13, "cl": 9, "fl": "my_test.cpp" }
+Ptr 71 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 14, "cl": 9, "fl": "my_test.cpp" }
+Ptr 72 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 16, "cl": 10, "fl": "my_test.cpp" }
+Ptr 73 		PointsTo: {empty}
+
+----------------------------------------------
+##<call> Source Loc: { "ln": 16, "cl": 15, "fl": "my_test.cpp" }
+Ptr 74 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 16, "cl": 10, "fl": "my_test.cpp" }
+Ptr 75 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 17, "cl": 10, "fl": "my_test.cpp" }
+Ptr 76 		PointsTo: {empty}
+
+----------------------------------------------
+##<call1> Source Loc: { "ln": 17, "cl": 15, "fl": "my_test.cpp" }
+Ptr 77 		PointsTo: { 64 66 }
+
+!!Target NodeID 64	 [<a> Source Loc: { "ln": 13, "fl": "my_test.cpp" }] 
+!!Target NodeID 66	 [<b> Source Loc: { "ln": 14, "fl": "my_test.cpp" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 17, "cl": 10, "fl": "my_test.cpp" }
+Ptr 78 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 18, "cl": 1, "fl": "my_test.cpp" }
+Ptr 79 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 80 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
 ----------------------------------------------
 Writing 'callgraph_final.dot'...
 
 ****Persistent Points-To Cache Statistics: Andersen's analysis bitvector****
 ################ (program : my_test.opt.bc)###############
-UniquePointsToSets       13
-TotalUnions              24
-PropertyUnions           21
+UniquePointsToSets       19
+TotalUnions              49
+PropertyUnions           46
 UniqueUnions             1
 LookupUnions             0
 PreemptiveUnions         2
-TotalComplements         66
-PropertyComplements      66
+TotalComplements         108
+PropertyComplements      108
 UniqueComplements        0
 LookupComplements        0
 PreemptiveComplements    0
-TotalIntersections       4
-PropertyIntersections    4
+TotalIntersections       7
+PropertyIntersections    7
 UniqueIntersections      0
 LookupIntersections      0
 PreemptiveIntersections  0
@@ -407,17 +582,17 @@ CSChiNode           0
 CSHasChi            0
 CSHasMu             0
 CSMuNode            0
-FunEntryChi         3
-FunHasEntryChi      2
-FunHasRetMu         2
-FunRetMu            3
-LoadHasMu           1
-LoadMuNode          1
+FunEntryChi         7
+FunHasEntryChi      6
+FunHasRetMu         6
+FunRetMu            7
+LoadHasMu           0
+LoadMuNode          0
 MSSAPhi             0
 MaxRegSize          1
-MemRegions          3
-StoreChiNode        3
-StoreHasChi         3
+MemRegions          7
+StoreChiNode        7
+StoreHasChi         7
 #######################################################
 
 *********SVFG Statistics***************
@@ -433,36 +608,36 @@ TotalTime           0
 ----------------Numbers stats----------------------------
 ActualIn            0
 ActualOut           0
-ActualParam         4
-ActualRet           2
-Addr                12
+ActualParam         6
+ActualRet           6
+Addr                18
 AvgInDegree         0
 AvgIndInDeg         1
 AvgIndOutDeg        1
 AvgOutDegree        0
 Copy                1
-DirectCallEdge      2
-DirectEdge          18
-DirectRetEdge       2
-FormalIn            3
-FormalOut           3
-FormalParam         1
-FormalRet           1
+DirectCallEdge      6
+DirectEdge          43
+DirectRetEdge       6
+FormalIn            7
+FormalOut           7
+FormalParam         5
+FormalRet           5
 Gep                 0
 IndCallEdge         0
 IndRetEdge          0
-IndirectEdge        7
-IndirectEdgeLabels  7
-Load                1
+IndirectEdge        14
+IndirectEdgeLabels  14
+Load                0
 MSSAPhi             0
 MaxInDegree         3
 MaxIndInDeg         1
-MaxIndOutDeg        2
+MaxIndOutDeg        1
 MaxOutDegree        2
-PHI                 1
-Store               3
-TotalEdge           25
-TotalNode           33
+PHI                 5
+Store               7
+TotalEdge           57
+TotalNode           68
 #######################################################
 Writing 'callgraph_initial.dot'...
 
@@ -481,17 +656,17 @@ CSChiNode           0
 CSHasChi            0
 CSHasMu             0
 CSMuNode            0
-FunEntryChi         3
-FunHasEntryChi      2
-FunHasRetMu         2
-FunRetMu            3
-LoadHasMu           1
-LoadMuNode          1
+FunEntryChi         7
+FunHasEntryChi      6
+FunHasRetMu         6
+FunRetMu            7
+LoadHasMu           0
+LoadMuNode          0
 MSSAPhi             0
 MaxRegSize          1
-MemRegions          3
-StoreChiNode        3
-StoreHasChi         3
+MemRegions          7
+StoreChiNode        7
+StoreHasChi         7
 #######################################################
 
 *********SVFG Statistics***************
@@ -507,36 +682,36 @@ TotalTime           0
 ----------------Numbers stats----------------------------
 ActualIn            0
 ActualOut           0
-ActualParam         4
-ActualRet           2
-Addr                12
+ActualParam         6
+ActualRet           6
+Addr                18
 AvgInDegree         0
 AvgIndInDeg         1
 AvgIndOutDeg        1
 AvgOutDegree        0
 Copy                1
-DirectCallEdge      2
-DirectEdge          18
-DirectRetEdge       2
-FormalIn            3
-FormalOut           3
-FormalParam         1
-FormalRet           1
+DirectCallEdge      6
+DirectEdge          43
+DirectRetEdge       6
+FormalIn            7
+FormalOut           7
+FormalParam         5
+FormalRet           5
 Gep                 0
 IndCallEdge         0
 IndRetEdge          0
-IndirectEdge        7
-IndirectEdgeLabels  7
-Load                1
+IndirectEdge        14
+IndirectEdgeLabels  14
+Load                0
 MSSAPhi             0
 MaxInDegree         3
 MaxIndInDeg         1
-MaxIndOutDeg        2
+MaxIndOutDeg        1
 MaxOutDegree        2
-PHI                 1
-Store               3
-TotalEdge           25
-TotalNode           33
+PHI                 5
+Store               7
+TotalEdge           57
+TotalNode           68
 #######################################################
 
 *********PTACallGraph Stats (DDA analysis)***************
@@ -546,8 +721,8 @@ CalRetPairInCycle   0
 MaxNodeInCycle      0
 NodeInCycle         0
 TotalCycle          0
-TotalEdge           3
-TotalNode           4
+TotalEdge           6
+TotalNode           7
 #######################################################
 
 *********SVFG SCC Stat***************
@@ -562,13 +737,13 @@ InsenRetEdge        0
 MaxNodeInCycle      0
 NodeInCycle         0
 RetEdgeInCycle      0
-TotalCallEdge       2
+TotalCallEdge       6
 TotalCycle          0
-TotalDirEdge        18
-TotalEdge           25
-TotalIndEdge        7
-TotalNode           33
-TotalRetEdge        2
+TotalDirEdge        43
+TotalEdge           57
+TotalIndEdge        14
+TotalNode           68
+TotalRetEdge        6
 #######################################################
 
 ****Demand-Driven Pointer Analysis Statistics****
@@ -576,50 +751,68 @@ TotalRetEdge        2
 ************************
 ################ (program : my_test.opt.bc)###############
 ----------------Time and memory stats--------------------
-AvgCPtsSize         1.0625
-AvgDPMAtLoc         0.8125
-AvgPtsSize          1.0625
-AvgTimePerQuery     0
-MemoryUsageVmrss    0
-MemoryUsageVmsize   0
-TotalBKCondTime     4.75576e-313
-TotalQueryTime      0
+AvgCPtsSize         1.39394
+AvgDPMAtLoc         0.666667
+AvgPtsSize          1.39394
+AvgTimePerQuery     3.0303e-05
+MemoryUsageVmrss    104
+MemoryUsageVmsize   132
+TotalBKCondTime     0
+TotalQueryTime      0.001
 ----------------Numbers stats----------------------------
 IndEdgeSolved       0
 MaxCPtsSize         2
-MaxCxtPerQuery      1
+MaxCxtPerQuery      5
 MaxDPMAtLoc         1
 MaxPathPerQuery     0
 MaxPtsSize          2
-NumOfDPM            35
+NumOfDPM            218
 NumOfInfePath       2
 NumOfMustAA         0
 NumOfNullPtr        1
 NumOfOOBQuery       0
-NumOfQuery          16
-NumOfSU             1
-NumOfStep           37
-NumOfStepInCycle    12
-NumOfStore          3
-NumOfStoreSU        1
+NumOfQuery          33
+NumOfSU             0
+NumOfStep           232
+NumOfStepInCycle    105
+NumOfStore          7
+NumOfStoreSU        0
 PointsToBlkPtr      0
 PointsToConstPtr    0
 #######################################################
 Writing 'callgraph_final.dot'...
-[Context Sensitive DDA] Checking _Z7NOALIASPvS_
-[1;32m	 SUCCESS :[1;0m_Z7NOALIASPvS_ check <id:43, id:41> at (CallICFGNode: { "ln": 18, "cl": 1, "fl": "my_test.cpp" })
-<45 [: ]>  ==> { <46 [: ]>  }
-<43 [: ]>  ==> { <26 [: ]>  }
-<41 [: ]>  ==> { <28 [: ]>  }
-<4 [: ]>  ==> { <5 [: ]>  }
-<6 [: ]>  ==> { <26 [: ]>  <28 [: ]>  }
-<7 [: ]>  ==> { <26 [: ]>  <28 [: ]>  }
-<8 [: ]>  ==> { <9 [: ]>  }
-<14 [: ]>  ==> { <15 [: ]>  }
+Eshaan: printed fourth
+Final Boss
+Eshaan: printed sixth
+<77 [: ]>  ==> { <66 [: ]>  }
+<74 [: ]>  ==> { <64 [: ]>  }
+<69 [: ]>  ==> { <70 [: ]>  }
+<67 [: ]>  ==> { <68 [: ]>  }
+<32 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<30 [: ]>  ==> { <31 [: ]>  }
+<28 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<24 [: ]>  ==> { <25 [: ]>  }
+<23 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<22 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
 <20 [: ]>  ==> { <21 [: ]>  }
-<23 [: ]>  ==> { <24 [: ]>  }
-<25 [: ]>  ==> { <26 [: ]>  }
-<27 [: ]>  ==> { <28 [: ]>  }
-<29 [: ]>  ==> { <30 [: ]>  }
-<31 [: ]>  ==> { <32 [: ]>  }
-<38 [: ]>  ==> { <26 [: ]>  }
+<14 [: ]>  ==> { <15 [: ]>  }
+<8 [: ]>  ==> { <9 [: ]>  }
+<7 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<6 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<4 [: ]>  ==> { <5 [: ]>  }
+<33 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<34 [: ]>  ==> { <35 [: ]>  }
+<38 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<40 [: ]>  ==> { <41 [: ]>  }
+<42 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<43 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<44 [: ]>  ==> { <45 [: ]>  }
+<48 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<50 [: ]>  ==> { <51 [: ]>  }
+<52 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<53 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<54 [: ]>  ==> { <55 [: ]>  }
+<58 [: ]>  ==> { <64 [: ]>  <66 [: ]>  }
+<60 [: ]>  ==> { <61 [: ]>  }
+<63 [: ]>  ==> { <64 [: ]>  }
+<65 [: ]>  ==> { <66 [: ]>  }

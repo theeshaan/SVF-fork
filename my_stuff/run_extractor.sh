@@ -11,18 +11,23 @@ LLVM_PATH=""
 
 function run_base(){
     filepath="$1"
-    # 1. Internalize all functions except main (marks them as internal)
-    # 2. Run Global Dead Code Elimination (removes internal, uncalled functions)
-    "$LLVM_PATH/opt" -S -passes='internalize,globaldce,early-cse' -internalize-public-api-list=main $filepath.bc -o $filepath.opt.bc
-    # 3. Run dvf/wpa on the optimized bitcode
+    # Previously I was marking all functions except main as internal (except main) and doing
+    # dead code elimination, so that functions that are never called are also
+    # not part of the analysis (to improve precision)
+    # but I realised that we may also have to analyse files that do not contain a main,
+    # so I removed those passes to maintain soundness
+    # However, I am keeping a early-cse pass to convert the flow-insensitive output of SVF
+    # into a partially flow-sensitive one
+    "$LLVM_PATH/opt" -S -passes='early-cse' $filepath.bc -o $filepath.opt.bc
+    # Run dvf/wpa on the optimized bitcode
     echo "Processing $file with DVF"
-    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -print-pag -dump-callgraph -max-cxt=3 -flow-bg=10000 -cxt-bg=10000 $filepath.opt.bc > $filepath.pta
+    "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -print-pag -dump-callgraph -max-cxt=5 -flow-bg=10000 -cxt-bg=10000 $filepath.opt.bc > $filepath.pta
     # echo "Processing $file with SVF flags: $SVF_PTA_FLAG"
     # "$SVF_PATH/wpa" $SVF_PTA_FLAG -print-all-pts -print-pag -dump-callgraph $filepath.opt.bc > $filepath.pta;
     python3 extractor.py $filepath;
     # rm $filepath.pta;
     rm $filepath.bc
-    rm $filepath.opt.bc
+    # rm $filepath.opt.bc
     rm callgraph_initial.dot
     rm callgraph_final.dot
 }

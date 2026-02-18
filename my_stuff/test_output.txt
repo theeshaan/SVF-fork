@@ -1,7 +1,26 @@
 Processing my_test.cpp with DVF
 Pointer              Pointees
 ------------------------------
-id                   a_main, b_main
-p.addr_id            a_main, b_main
+id5                  a_main, b_main
+in_id5               a_main, b_main
+in.addr_id5          a_main, b_main
+id4                  a_main, b_main
+in_id4               a_main, b_main
+in.addr_id4          a_main, b_main
+call_id4             a_main, b_main
+id3                  a_main, b_main
+in_id3               a_main, b_main
+in.addr_id3          a_main, b_main
+call_id3             a_main, b_main
+id2                  a_main, b_main
+in_id2               a_main, b_main
+in.addr_id2          a_main, b_main
+call_id2             a_main, b_main
+id1                  a_main, b_main
+in_id1               a_main, b_main
+in.addr_id1          a_main, b_main
+call_id1             a_main, b_main
 pa_main              a_main
 pb_main              b_main
+call_main            a_main
+call1_main           b_main

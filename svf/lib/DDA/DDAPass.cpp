@@ -55,6 +55,7 @@ DDAPass::~DDAPass()
 
 void DDAPass::runOnModule(SVFIR* pag)
 {
+    std::cout << "Eshaan: printed second" << std::endl;
     /// initialization for llvm alias analyzer
     // InitializeAliasAnalysis(this, getDataLayout(&module));
 
@@ -152,6 +153,7 @@ void DDAPass::selectClient()
 /// Create pointer analysis according to specified kind and analyze the module.
 void DDAPass::runPointerAnalysis(SVFIR* pag, u32_t kind)
 {
+    std::cout << "Eshaan: printed third" << std::endl;
 
     ContextCond::setMaxPathLen(Options::MaxPathLen());
     ContextCond::setMaxCxtLen(Options::MaxContextLen());

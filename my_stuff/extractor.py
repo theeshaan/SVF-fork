@@ -30,8 +30,15 @@ def parse_pta_input(file_path):
     for lhs, rhs in matches:
         graph[int(lhs)] = {int(x) for x in re.findall(r"<(\d+)", rhs)}
 
+    # print("Graph1")
+    # print(graph)
+    # print()
+
+
     # Parse the PTA, specifically store edges, to match pointers to variables stored in them
     matches = re.findall(r"(\d+)\s*-- Store -->\s*(\d+)", content)
+
+    temp_graph = graph.copy()
 
     for match in matches:
         source, variable = match # the source is being stored into the variable
@@ -41,26 +48,30 @@ def parse_pta_input(file_path):
             continue # irrelevant tokens
         if variable not in graph:
             graph[variable] = set()
+            temp_graph[variable] = set()
         if source not in graph:
             graph[source] = set()
+            temp_graph[source] = set()
         # If the variable currently points to only one node and that node is the same as the variable
         # then we can just update the variable's pointee set to the source's pointee set
         if len(graph[variable]) == 1 and token_map[list(graph[variable])[0]][0] == token_map[variable][0]:
-            graph[variable] = graph[source]
-        # TODO: Check how the existing pointee set of a variable should be merged with
-        # the new info we get from here (for now I'm just appending to the existing info)
+            temp_graph[variable] = graph[source]
         else:
-            graph[variable].update(graph[source])
+            # TODO: Check how the existing pointee set of a variable should be merged with
+            # the new info we get from here (for now I'm just appending to the existing info)
+            temp_graph[variable].update(graph[source])
+    graph = temp_graph
 
-        # TODO: VERY IMPORTANT: check if below line (deleting the source from the graph)
-        # is correct
-        graph.pop(source)
+    # # TODO: VERY IMPORTANT: check if below line (deleting the source from the graph)
+    # # is correct
+    # for match in matches:
+    #     source,variable = match
+    #     if source in graph:
+    #         graph.pop(source)
 
-        # below four lines are useless, delete them
-        # for pointee in graph[source]:
-        #     # add only if the names of the source and destination variables are not the same
-        #     if token_map[source][0] != token_map[variable][0]:
-        #         graph[variable].add(pointee)
+    # print("Graph2")
+    # print(graph)
+    # print()
 
     return graph, token_map
 

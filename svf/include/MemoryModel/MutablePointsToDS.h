@@ -111,6 +111,7 @@ public:
 
     virtual inline void dumpPTData() override
     {
+        SVFUtil::outs() << "Final Boss" << std::endl;
         dumpPts(ptsMap);
     }
 
@@ -160,6 +161,7 @@ public:
 protected:
     virtual inline void dumpPts(const PtsMap & ptsSet,OutStream & O = SVFUtil::outs()) const
     {
+        std::cout << "Eshaan: printed sixth" << std::endl;
         for (PtsMapConstIter nodeIt = ptsSet.begin(); nodeIt != ptsSet.end(); nodeIt++)
         {
             const Key& var = nodeIt->first;
@@ -293,6 +295,8 @@ public:
 
     virtual inline void dumpPTData() override
     {
+        std::cout << "Eshaan: printed fifth" << std::endl;
+        // SVFUtil::outs() << "Eshaan1" << std::endl;
         mutPTData.dumpPTData();
     }
 
@@ -612,6 +616,7 @@ public:
     virtual inline void dumpPTData() override
     {
         /// dump points-to of top-level pointers
+        SVFUtil::outs() << "Eshaan2" << std::endl;
         mutPTData.dumpPTData();
         /// dump points-to of address-taken variables
         std::error_code ErrInfo;
@@ -994,6 +999,7 @@ public:
 
     virtual inline void dumpPTData() override
     {
+        SVFUtil::outs() << "Eshaan3" << std::endl;
         SVFUtil::outs() << "== Top-level points-to information\n";
         tlPTData.dumpPTData();
         SVFUtil::outs() << "== Address-taken points-to information\n";

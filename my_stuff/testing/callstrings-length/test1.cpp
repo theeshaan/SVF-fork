@@ -1,4 +1,6 @@
 // A program to test the precision loss due to callstrings length limit in SVF
+// Callstrings limit=3 (default) => pa->{a,b}, pb->{a,b}
+// Callstrings limit=5 => pa->{a}, pb->{b} (set by dvf option -max-cxt=5)
 
 struct Obj {int value;};
 
