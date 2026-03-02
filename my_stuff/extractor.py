@@ -362,4 +362,3 @@ if __name__ == "__main__":
     pta_graph, token_map = remap_nodes(pta_graph, token_map)
     index_to_id_map = build_index_to_id_map(token_map, func_name_map)
     display_pts_to_info(pta_graph, index_to_id_map)
-

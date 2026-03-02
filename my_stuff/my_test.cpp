@@ -2,7 +2,7 @@
 
 extern void MUSTALIAS(void*,void*);
 
-void t4()
+void func()
 {
     int x, y;
     int* p = &x;

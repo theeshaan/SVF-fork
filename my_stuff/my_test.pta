@@ -1,3 +1,5 @@
+Adding callsite argument: 24 for callsite: 12in file SVFIR.h line 570
+Adding callsite argument: 22 for callsite: 12in file SVFIR.h line 570
 -------------------SVFIR------------------------------------
 3 -- Addr --> 9
 5 -- Addr --> 4
@@ -49,8 +51,8 @@ TotalSVFStmts       14
 VarArrayObj         0
 VarStructObj        0
 ----------------Time and memory stats--------------------
-LLVMIRTime          0.009
-SVFIRTime           0.001
+LLVMIRTime          0.01
+SVFIRTime           0
 SymbolTableTime     0
 #######################################################
 
@@ -78,11 +80,11 @@ AvgTopLvlPtsSize    0.9
 CollapseTime        0
 CopyGepTime         0
 LoadStoreTime       0
-MemoryUsageVmrss    540
+MemoryUsageVmrss    440
 MemoryUsageVmsize   0
 SCCDetectTime       0
 SCCMergeTime        0
-TotalTime           0.001
+TotalTime           0
 UpdateCGTime        0
 ----------------Numbers stats----------------------------
 AddrProcessed       8
@@ -146,16 +148,16 @@ Ptr 2 		PointsTo: {empty}
 Ptr 3 		PointsTo: {empty}
 
 ----------------------------------------------
-##<_Z2t4v> Source Loc: { "ln": 5, "file": "my_test.cpp" }
+##<_Z4funcv> Source Loc: { "ln": 5, "file": "my_test.cpp" }
 Ptr 4 		PointsTo: { 5 }
 
-!!Target NodeID 5	 [<_Z2t4v> Source Loc: { "ln": 5, "file": "my_test.cpp" }] 
+!!Target NodeID 5	 [<_Z4funcv> Source Loc: { "ln": 5, "file": "my_test.cpp" }] 
 ----------------------------------------------
-##<_Z2t4v> Source Loc: { "ln": 5, "file": "my_test.cpp" }
+##<_Z4funcv> Source Loc: { "ln": 5, "file": "my_test.cpp" }
 Ptr 5 		PointsTo: {empty}
 
 ----------------------------------------------
-##<_Z2t4v> Source Loc: { "ln": 5, "file": "my_test.cpp" }
+##<_Z4funcv> Source Loc: { "ln": 5, "file": "my_test.cpp" }
 Ptr 6 		PointsTo: {empty}
 
 ----------------------------------------------
@@ -395,11 +397,11 @@ Writing 'callgraph_initial.dot'...
 ################ (program : my_test.opt.bc)###############
 ----------------Time and memory stats--------------------
 AverageRegSize      1
-GenMUCHITime        0.001
+GenMUCHITime        0
 GenRegionTime       0
 InsertPHITime       0
 SSARenameTime       0
-TotalMSSATime       0.001
+TotalMSSATime       0
 ----------------Numbers stats----------------------------
 BBHasMSSAPhi        0
 CSChiNode           0
@@ -505,9 +507,9 @@ AvgCPtsSize         0.9
 AvgDPMAtLoc         1
 AvgPtsSize          0.9
 AvgTimePerQuery     0
-MemoryUsageVmrss    0
+MemoryUsageVmrss    40
 MemoryUsageVmsize   0
-TotalBKCondTime     4.98362e-313
+TotalBKCondTime     4.84888e-313
 TotalQueryTime      0
 ----------------Numbers stats----------------------------
 IndEdgeSolved       0
@@ -532,6 +534,7 @@ PointsToConstPtr    0
 #######################################################
 Writing 'callgraph_final.dot'...
 [Context Sensitive DDA] Checking _Z9MUSTALIASPvS_
+PointerAnalysis.cpp:520, got called with 24 and 22
 [1;32m	 SUCCESS :[1;0m_Z9MUSTALIASPvS_ check <id:24, id:22> at (CallICFGNode: { "ln": 11, "cl": 5, "fl": "my_test.cpp" })
 <29 [: ]>  ==> { <30 [: ]>  }
 <26 [: ]>  ==> { <27 [: ]>  }

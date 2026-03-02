@@ -1,5 +1,5 @@
 Processing my_test.cpp with DVF
 Pointer              Pointees
 ------------------------------
-p_t4                 x_t4
-q_t4                 x_t4, y_t4
+p_func               x_func
+q_func               x_func, y_func
