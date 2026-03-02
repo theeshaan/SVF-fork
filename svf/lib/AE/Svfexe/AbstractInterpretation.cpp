@@ -34,6 +34,7 @@
 #include "Graphs/CallGraph.h"
 #include "WPA/Andersen.h"
 #include <cmath>
+#include <deque>
 
 using namespace SVF;
 using namespace SVFUtil;
@@ -46,6 +47,12 @@ void AbstractInterpretation::runOnModule(ICFG *_icfg)
     icfg = _icfg;
     svfir = PAG::getPAG();
     utils = new AbsExtAPI(abstractTrace);
+
+    // Run Andersen's pointer analysis and build WTO
+    preAnalysis = new PreAnalysis(svfir, icfg);
+    callGraph = preAnalysis->getCallGraph();
+    icfg->updateCallGraph(callGraph);
+    preAnalysis->initWTO();
 
     /// collect checkpoint
     collectCheckPoint();
@@ -68,108 +75,104 @@ AbstractInterpretation::AbstractInterpretation()
 AbstractInterpretation::~AbstractInterpretation()
 {
     delete stat;
-    for (auto it: funcToWTO)
-        delete it.second;
+    delete preAnalysis;
 }
 
-/**
- * @brief Compute WTO for each function partition entry
- *
- * This function first identifies function partition entries (pair: <entry, function set>),
- * and then compute the IWTO for each pair.
- * It does this by detecting call graph's strongly connected components (SCC).
- * Each SCC forms a function partition, and any function that is invoked from outside its SCC
- * is identified as an entry of the function partition.
- */
-void AbstractInterpretation::initWTO()
+/// Collect entry point functions for analysis.
+/// Entry points are functions without callers (no incoming edges in CallGraph).
+/// Uses a deque to allow efficient insertion at front for prioritizing main()
+std::deque<const FunObjVar*> AbstractInterpretation::collectProgEntryFuns()
 {
-    AndersenWaveDiff* ander = AndersenWaveDiff::createAndersenWaveDiff(svfir);
-    // Detect if the call graph has cycles by finding its strongly connected components (SCC)
-    Andersen::CallGraphSCC* callGraphScc = ander->getCallGraphSCC();
-    callGraphScc->find();
-    CallGraph* callGraph = ander->getCallGraph();
+    std::deque<const FunObjVar*> entryFunctions;
 
-    // Iterate through the call graph
-    for (auto it = callGraph->begin(); it != callGraph->end(); it++)
+    for (auto it = callGraph->begin(); it != callGraph->end(); ++it)
     {
-        // Check if the current function is part of a cycle
-        if (callGraphScc->isInCycle(it->second->getId()))
-            recursiveFuns.insert(it->second->getFunction()); // Mark the function as recursive
+        const CallGraphNode* cgNode = it->second;
+        const FunObjVar* fun = cgNode->getFunction();
 
-        // Calculate ICFGWTO for each function/recursion
-        const FunObjVar *fun = it->second->getFunction();
+        // Skip declarations
         if (fun->isDeclaration())
             continue;
 
-        NodeID repNodeId = callGraphScc->repNode(it->second->getId());
-        auto cgSCCNodes = callGraphScc->subNodes(repNodeId);
-
-        // Identify if this node is an SCC entry (nodes who have incoming edges
-        // from nodes outside the SCC). Also identify non-recursive callsites.
-        bool isEntry = false;
-        if (it->second->getInEdges().empty())
-            isEntry = true;
-        for (auto inEdge: it->second->getInEdges())
+        // Entry points are functions without callers (no incoming edges)
+        if (cgNode->getInEdges().empty())
         {
-            NodeID srcNodeId = inEdge->getSrcID();
-            if (!cgSCCNodes.test(srcNodeId))
+            // If main exists, put it first for priority using deque's push_front
+            if (fun->getName() == "main")
             {
-                isEntry = true;
-                const CallICFGNode *callSite = nullptr;
-                if (inEdge->isDirectCallEdge())
-                    callSite = *(inEdge->getDirectCalls().begin());
-                else if (inEdge->isIndirectCallEdge())
-                    callSite = *(inEdge->getIndirectCalls().begin());
-                else
-                    assert(false && "CallGraphEdge must "
-                           "be either direct or indirect!");
-
-                nonRecursiveCallSites.insert(
-                {callSite, inEdge->getDstNode()->getFunction()->getId()});
+                entryFunctions.push_front(fun);
             }
-        }
-
-        // Compute IWTO for the function partition entered from each partition entry
-        if (isEntry)
-        {
-            Set<const FunObjVar*> funcScc;
-            for (const auto& node: cgSCCNodes)
+            else
             {
-                funcScc.insert(callGraph->getGNode(node)->getFunction());
+                entryFunctions.push_back(fun);
             }
-            ICFGWTO* iwto = new ICFGWTO(icfg->getFunEntryICFGNode(fun), funcScc);
-            iwto->init();
-            funcToWTO[it->second->getFunction()] = iwto;
         }
     }
+
+    return entryFunctions;
 }
 
-/// Program entry
+
+/// Program entry - analyze from all entry points (multi-entry analysis is the default)
 void AbstractInterpretation::analyse()
 {
-    initWTO();
+    // Always use multi-entry analysis from all entry points
+    analyzeFromAllProgEntries();
+}
+
+/// Analyze all entry points (functions without callers) - for whole-program analysis.
+/// Abstract state is shared across entry points so that functions analyzed from
+/// earlier entries are not re-analyzed from scratch.
+void AbstractInterpretation::analyzeFromAllProgEntries()
+{
+    // Collect all entry point functions
+    std::deque<const FunObjVar*> entryFunctions = collectProgEntryFuns();
+
+    if (entryFunctions.empty())
+    {
+        assert(false && "No entry functions found for analysis");
+        return;
+    }
     // handle Global ICFGNode of SVFModule
     handleGlobalNode();
-    getAbsStateFromTrace(
-        icfg->getGlobalICFGNode())[PAG::getPAG()->getBlkPtr()] = IntervalValue::top();
-    if (const CallGraphNode* cgn = svfir->getCallGraph()->getCallGraphNode("main"))
+    for (const FunObjVar* entryFun : entryFunctions)
     {
-        const ICFGWTO* wto = funcToWTO[cgn->getFunction()];
-        handleWTOComponents(wto->getWTOComponents());
+        const ICFGNode* funEntry = icfg->getFunEntryICFGNode(entryFun);
+        handleFunction(funEntry);
     }
 }
 
 /// handle global node
+/// Initializes the abstract state for the global ICFG node and processes all global statements.
+/// This includes setting up the null pointer and black hole pointer (blkPtr).
+/// BlkPtr is initialized to point to the BlackHole object, representing
+/// an unknown memory location that cannot be statically resolved.
 void AbstractInterpretation::handleGlobalNode()
 {
     const ICFGNode* node = icfg->getGlobalICFGNode();
     abstractTrace[node] = AbstractState();
     abstractTrace[node][IRGraph::NullPtr] = AddressValue();
+
     // Global Node, we just need to handle addr, load, store, copy and gep
     for (const SVFStmt *stmt: node->getSVFStmts())
     {
         handleSVFStatement(stmt);
     }
+
+    // BlkPtr represents a pointer whose target is statically unknown (e.g., from
+    // int2ptr casts, external function returns, or unmodeled instructions like
+    // AtomicCmpXchg). It should be an address pointing to the BlackHole object
+    // (ID=2), NOT an interval top.
+    //
+    // History: this was originally set to IntervalValue::top() as a quick fix when
+    // the analysis crashed on programs containing uninitialized BlkPtr. However,
+    // BlkPtr is semantically a *pointer* (address domain), not a numeric value
+    // (interval domain). Setting it to interval top broke cross-domain consistency:
+    // the interval domain and address domain gave contradictory information for the
+    // same variable. The correct representation is an AddressValue containing the
+    // BlackHole virtual address, which means "points to unknown memory".
+    abstractTrace[node][PAG::getPAG()->getBlkPtr()] =
+        AddressValue(BlackHoleObjAddr);
 }
 
 /// get execution state by merging states of predecessor blocks
@@ -215,21 +218,12 @@ bool AbstractInterpretation::mergeStatesFromPredecessors(const ICFGNode * icfgNo
             else if (const RetCFGEdge *retCfgEdge =
                          SVFUtil::dyn_cast<RetCFGEdge>(edge))
             {
-                switch (Options::HandleRecur())
-                {
-                case TOP:
+                // Only include return edge if the corresponding callsite was processed
+                // (skipped recursive callsites in WIDEN_ONLY/WIDEN_NARROW won't have state)
+                const RetICFGNode* retNode = SVFUtil::dyn_cast<RetICFGNode>(icfgNode);
+                if (hasAbsStateFromTrace(retNode->getCallICFGNode()))
                 {
                     workList.push_back(abstractTrace[retCfgEdge->getSrcNode()]);
-                    break;
-                }
-                case WIDEN_ONLY:
-                case WIDEN_NARROW:
-                {
-                    const RetICFGNode* returnSite = SVFUtil::dyn_cast<RetICFGNode>(icfgNode);
-                    const CallICFGNode* callSite = returnSite->getCallICFGNode();
-                    if (hasAbsStateFromTrace(callSite))
-                        workList.push_back(abstractTrace[retCfgEdge->getSrcNode()]);
-                }
                 }
             }
             else
@@ -280,7 +274,7 @@ bool AbstractInterpretation::isCmpBranchFeasible(const CmpStmt* cmpStmt, s64_t s
     const LoadStmt *load_op0 = nullptr;
     const LoadStmt *load_op1 = nullptr;
     // get '%1 = load i32 s', and load inst may not exist
-    SVFVar* loadVar0 = svfir->getGNode(op0);
+    const SVFVar* loadVar0 = svfir->getSVFVar(op0);
     if (!loadVar0->getInEdges().empty())
     {
         SVFStmt *loadVar0InStmt = *loadVar0->getInEdges().begin();
@@ -290,7 +284,7 @@ bool AbstractInterpretation::isCmpBranchFeasible(const CmpStmt* cmpStmt, s64_t s
         }
         else if (const CopyStmt *copyStmt = SVFUtil::dyn_cast<CopyStmt>(loadVar0InStmt))
         {
-            loadVar0 = svfir->getGNode(copyStmt->getRHSVarID());
+            loadVar0 = svfir->getSVFVar(copyStmt->getRHSVarID());
             if (!loadVar0->getInEdges().empty())
             {
                 SVFStmt *loadVar0InStmt2 = *loadVar0->getInEdges().begin();
@@ -302,7 +296,7 @@ bool AbstractInterpretation::isCmpBranchFeasible(const CmpStmt* cmpStmt, s64_t s
         }
     }
 
-    SVFVar* loadVar1 = svfir->getGNode(op1);
+    const SVFVar* loadVar1 = svfir->getSVFVar(op1);
     if (!loadVar1->getInEdges().empty())
     {
         SVFStmt *loadVar1InStmt = *loadVar1->getInEdges().begin();
@@ -312,7 +306,7 @@ bool AbstractInterpretation::isCmpBranchFeasible(const CmpStmt* cmpStmt, s64_t s
         }
         else if (const CopyStmt *copyStmt = SVFUtil::dyn_cast<CopyStmt>(loadVar1InStmt))
         {
-            loadVar1 = svfir->getGNode(copyStmt->getRHSVarID());
+            loadVar1 = svfir->getSVFVar(copyStmt->getRHSVarID());
             if (!loadVar1->getInEdges().empty())
             {
                 SVFStmt *loadVar1InStmt2 = *loadVar1->getInEdges().begin();
@@ -577,33 +571,185 @@ void AbstractInterpretation::handleSingletonWTO(const ICFGSingletonWTO *icfgSing
 }
 
 /**
- * @brief Handle two types of WTO components (singleton and cycle)
+ * Handle an ICFG node by merging states from predecessors and processing statements
+ * Returns true if the abstract state has changed, false if fixpoint reached or infeasible
  */
-void AbstractInterpretation::handleWTOComponents(const std::list<const ICFGWTOComp*>& wtoComps)
+bool AbstractInterpretation::handleICFGNode(const ICFGNode* node)
 {
-    for (const ICFGWTOComp* wtoNode : wtoComps)
+    // Store the previous state for fixpoint detection
+    AbstractState prevState;
+    bool hadPrevState = hasAbsStateFromTrace(node);
+    if (hadPrevState)
+        prevState = abstractTrace[node];
+
+    // For function entry nodes, initialize state from predecessors or global
+    bool isFunEntry = SVFUtil::isa<FunEntryICFGNode>(node);
+    if (isFunEntry)
     {
-        handleWTOComponent(wtoNode);
+        // Try to merge from predecessors first (handles call edges)
+        if (!mergeStatesFromPredecessors(node))
+        {
+            // No predecessors with state - inherit from global node
+            const ICFGNode* globalNode = icfg->getGlobalICFGNode();
+            if (hasAbsStateFromTrace(globalNode))
+            {
+                abstractTrace[node] = abstractTrace[globalNode];
+            }
+            else
+            {
+                abstractTrace[node] = AbstractState();
+            }
+        }
+    }
+    else
+    {
+        // Merge states from predecessors
+        if (!mergeStatesFromPredecessors(node))
+            return false;
+    }
+
+    stat->getBlockTrace()++;
+    stat->getICFGNodeTrace()++;
+
+    // Handle SVF statements
+    for (const SVFStmt *stmt: node->getSVFStmts())
+    {
+        handleSVFStatement(stmt);
+    }
+
+    // Handle call sites
+    if (const CallICFGNode* callNode = SVFUtil::dyn_cast<CallICFGNode>(node))
+    {
+        handleCallSite(callNode);
+    }
+
+    // Run detectors
+    for (auto& detector: detectors)
+        detector->detect(getAbsStateFromTrace(node), node);
+    stat->countStateSize();
+
+    // Track this node as analyzed (for coverage statistics across all entry points)
+    allAnalyzedNodes.insert(node);
+
+    // Check if state changed (for fixpoint detection)
+    // For entry nodes on first visit, always return true to process successors
+    if (isFunEntry && !hadPrevState)
+        return true;
+
+    if (abstractTrace[node] == prevState)
+        return false;
+
+    return true;
+}
+
+/**
+ * Get the next nodes of a node within the same function
+ * For CallICFGNode, includes shortcut to RetICFGNode
+ */
+std::vector<const ICFGNode*> AbstractInterpretation::getNextNodes(const ICFGNode* node) const
+{
+    std::vector<const ICFGNode*> outEdges;
+    for (const ICFGEdge* edge : node->getOutEdges())
+    {
+        const ICFGNode* dst = edge->getDstNode();
+        // Only nodes inside the same function are included
+        if (dst->getFun() == node->getFun())
+        {
+            outEdges.push_back(dst);
+        }
+    }
+    if (const CallICFGNode* callNode = SVFUtil::dyn_cast<CallICFGNode>(node))
+    {
+        // Shortcut to the RetICFGNode
+        const ICFGNode* retNode = callNode->getRetICFGNode();
+        outEdges.push_back(retNode);
+    }
+    return outEdges;
+}
+
+/**
+ * Get the next nodes outside a cycle
+ * Inner cycles are skipped since their next nodes cannot be outside the outer cycle
+ */
+std::vector<const ICFGNode*> AbstractInterpretation::getNextNodesOfCycle(const ICFGCycleWTO* cycle) const
+{
+    Set<const ICFGNode*> cycleNodes;
+    // Insert the head of the cycle and all component nodes
+    cycleNodes.insert(cycle->head()->getICFGNode());
+    for (const ICFGWTOComp* comp : cycle->getWTOComponents())
+    {
+        if (const ICFGSingletonWTO* singleton = SVFUtil::dyn_cast<ICFGSingletonWTO>(comp))
+        {
+            cycleNodes.insert(singleton->getICFGNode());
+        }
+        else if (const ICFGCycleWTO* subCycle = SVFUtil::dyn_cast<ICFGCycleWTO>(comp))
+        {
+            cycleNodes.insert(subCycle->head()->getICFGNode());
+        }
+    }
+
+    std::vector<const ICFGNode*> outEdges;
+
+    // Check head's successors
+    std::vector<const ICFGNode*> nextNodes = getNextNodes(cycle->head()->getICFGNode());
+    for (const ICFGNode* nextNode : nextNodes)
+    {
+        // Only nodes that point outside the cycle are included
+        if (cycleNodes.find(nextNode) == cycleNodes.end())
+        {
+            outEdges.push_back(nextNode);
+        }
+    }
+
+    // Check each component's successors
+    for (const ICFGWTOComp* comp : cycle->getWTOComponents())
+    {
+        if (const ICFGSingletonWTO* singleton = SVFUtil::dyn_cast<ICFGSingletonWTO>(comp))
+        {
+            std::vector<const ICFGNode*> compNextNodes = getNextNodes(singleton->getICFGNode());
+            for (const ICFGNode* nextNode : compNextNodes)
+            {
+                if (cycleNodes.find(nextNode) == cycleNodes.end())
+                {
+                    outEdges.push_back(nextNode);
+                }
+            }
+        }
+        // Skip inner cycles - they are handled within the outer cycle
+    }
+    return outEdges;
+}
+
+/**
+ * Handle a function using worklist algorithm guided by WTO order.
+ * All top-level WTO components are pushed into the worklist upfront,
+ * so the traversal order is exactly the WTO order — each node is
+ * visited once, and cycles are handled as whole components.
+ */
+void AbstractInterpretation::handleFunction(const ICFGNode* funEntry, const CallICFGNode* caller)
+{
+    auto it = preAnalysis->getFuncToWTO().find(funEntry->getFun());
+    if (it == preAnalysis->getFuncToWTO().end())
+        return;
+
+    // Push all top-level WTO components into the worklist in WTO order
+    FIFOWorkList<const ICFGWTOComp*> worklist(it->second->getWTOComponents());
+
+    while (!worklist.empty())
+    {
+        const ICFGWTOComp* comp = worklist.pop();
+
+        if (const ICFGSingletonWTO* singleton = SVFUtil::dyn_cast<ICFGSingletonWTO>(comp))
+        {
+            handleICFGNode(singleton->getICFGNode());
+        }
+        else if (const ICFGCycleWTO* cycle = SVFUtil::dyn_cast<ICFGCycleWTO>(comp))
+        {
+            handleLoopOrRecursion(cycle, caller);
+        }
     }
 }
 
-void AbstractInterpretation::handleWTOComponent(const ICFGWTOComp* wtoNode)
-{
-    if (const ICFGSingletonWTO* node = SVFUtil::dyn_cast<ICFGSingletonWTO>(wtoNode))
-    {
-        if (mergeStatesFromPredecessors(node->getICFGNode()))
-            handleSingletonWTO(node);
-    }
-    // Handle WTO cycles
-    else if (const ICFGCycleWTO* cycle = SVFUtil::dyn_cast<ICFGCycleWTO>(wtoNode))
-    {
-        if (mergeStatesFromPredecessors(cycle->head()->getICFGNode()))
-            handleCycleWTO(cycle);
-    }
-    // Assert false for unknown WTO types
-    else
-        assert(false && "unknown WTO type!");
-}
 
 void AbstractInterpretation::handleCallSite(const ICFGNode* node)
 {
@@ -611,22 +757,13 @@ void AbstractInterpretation::handleCallSite(const ICFGNode* node)
     {
         if (isExtCall(callNode))
         {
-            extCallPass(callNode);
-        }
-        else if (isRecursiveCall(callNode) && Options::HandleRecur() == TOP)
-        {
-            recursiveCallPass(callNode);
-        }
-        else if (isDirectCall(callNode))
-        {
-            directCallFunPass(callNode);
-        }
-        else if (isIndirectCall(callNode))
-        {
-            indirectCallFunPass(callNode);
+            handleExtCall(callNode);
         }
         else
-            assert(false && "implement this part");
+        {
+            // Handle both direct and indirect calls uniformly
+            handleFunCall(callNode);
+        }
     }
     else
         assert (false && "it is not call node");
@@ -637,35 +774,26 @@ bool AbstractInterpretation::isExtCall(const CallICFGNode *callNode)
     return SVFUtil::isExtCall(callNode->getCalledFunction());
 }
 
-void AbstractInterpretation::extCallPass(const CallICFGNode *callNode)
+void AbstractInterpretation::handleExtCall(const CallICFGNode *callNode)
 {
-    callSiteStack.push_back(callNode);
     utils->handleExtAPI(callNode);
     for (auto& detector : detectors)
     {
         detector->handleStubFunctions(callNode);
     }
-    callSiteStack.pop_back();
 }
 
+/// Check if a function is recursive (part of a call graph SCC)
 bool AbstractInterpretation::isRecursiveFun(const FunObjVar* fun)
 {
-    return recursiveFuns.find(fun) != recursiveFuns.end();
+    return preAnalysis->getPointerAnalysis()->isInRecursion(fun);
 }
 
-bool AbstractInterpretation::isRecursiveCall(const CallICFGNode *callNode)
-{
-    const FunObjVar *callfun = callNode->getCalledFunction();
-    if (!callfun)
-        return false;
-    else
-        return isRecursiveFun(callfun);
-}
-
-void AbstractInterpretation::recursiveCallPass(const CallICFGNode *callNode)
+/// Handle recursive call in TOP mode: set all stores and return value to TOP
+void AbstractInterpretation::handleRecursiveCall(const CallICFGNode *callNode)
 {
     AbstractState& as = getAbsStateFromTrace(callNode);
-    SkipRecursiveCall(callNode);
+    setTopToObjInRecursion(callNode);
     const RetICFGNode *retNode = callNode->getRetICFGNode();
     if (retNode->getSVFStmts().size() > 0)
     {
@@ -681,181 +809,247 @@ void AbstractInterpretation::recursiveCallPass(const CallICFGNode *callNode)
     abstractTrace[retNode] = as;
 }
 
+/// Check if caller and callee are in the same CallGraph SCC (i.e. a recursive callsite)
 bool AbstractInterpretation::isRecursiveCallSite(const CallICFGNode* callNode,
         const FunObjVar* callee)
 {
-    return nonRecursiveCallSites.find({callNode, callee->getId()}) ==
-           nonRecursiveCallSites.end();
+    const FunObjVar* caller = callNode->getCaller();
+    return preAnalysis->getPointerAnalysis()->inSameCallGraphSCC(caller, callee);
 }
 
-bool AbstractInterpretation::isDirectCall(const CallICFGNode *callNode)
+/// Get callee function: directly for direct calls, via pointer analysis for indirect calls
+const FunObjVar* AbstractInterpretation::getCallee(const CallICFGNode* callNode)
 {
-    const FunObjVar *callfun =callNode->getCalledFunction();
-    if (!callfun)
-        return false;
-    else
-        return !callfun->isDeclaration();
+    // Direct call: get callee directly from call node
+    if (const FunObjVar* callee = callNode->getCalledFunction())
+        return callee;
+
+    // Indirect call: resolve callee through pointer analysis
+    const auto callsiteMaps = svfir->getIndirectCallsites();
+    auto it = callsiteMaps.find(callNode);
+    if (it == callsiteMaps.end())
+        return nullptr;
+
+    NodeID call_id = it->second;
+    if (!hasAbsStateFromTrace(callNode))
+        return nullptr;
+
+    AbstractState& as = getAbsStateFromTrace(callNode);
+    if (!as.inVarToAddrsTable(call_id))
+        return nullptr;
+
+    AbstractValue Addrs = as[call_id];
+    if (Addrs.getAddrs().empty())
+        return nullptr;
+
+    NodeID addr = *Addrs.getAddrs().begin();
+    const SVFVar* func_var = svfir->getSVFVar(as.getIDFromAddr(addr));
+    return SVFUtil::dyn_cast<FunObjVar>(func_var);
 }
-void AbstractInterpretation::directCallFunPass(const CallICFGNode *callNode)
+
+/// Skip recursive callsites (within SCC); entry calls from outside SCC are not skipped
+bool AbstractInterpretation::skipRecursiveCall(const CallICFGNode* callNode)
+{
+    const FunObjVar* callee = getCallee(callNode);
+    if (!callee)
+        return false;
+
+    // Non-recursive function: never skip, always inline
+    if (!isRecursiveFun(callee))
+        return false;
+
+    // For recursive functions, skip only recursive callsites (within same SCC).
+    // Entry calls (from outside SCC) are not skipped - they are inlined so that
+    // handleLoopOrRecursion() can analyze the function body.
+    // This applies uniformly to all modes (TOP/WIDEN_ONLY/WIDEN_NARROW).
+    return isRecursiveCallSite(callNode, callee);
+}
+
+/// Check if narrowing should be applied: always for regular loops, mode-dependent for recursion
+bool AbstractInterpretation::shouldApplyNarrowing(const FunObjVar* fun)
+{
+    // Non-recursive functions (regular loops): always apply narrowing
+    if (!isRecursiveFun(fun))
+        return true;
+
+    // Recursive functions: WIDEN_NARROW applies narrowing, WIDEN_ONLY does not
+    // TOP mode exits early in handleLoopOrRecursion, so should not reach here
+    switch (Options::HandleRecur())
+    {
+    case TOP:
+        assert(false && "TOP mode should not reach narrowing phase for recursive functions");
+        return false;
+    case WIDEN_ONLY:
+        return false;  // Skip narrowing for recursive functions
+    case WIDEN_NARROW:
+        return true;   // Apply narrowing for recursive functions
+    default:
+        assert(false && "Unknown recursion handling mode");
+        return false;
+    }
+}
+/// Handle direct or indirect call: get callee(s), process function body, set return state.
+///
+/// For direct calls, the callee is known statically.
+/// For indirect calls, the previous implementation resolved callees from the abstract
+/// state's address domain, which only picked the first address and missed other targets.
+/// Since the abstract state's address domain is not an over-approximation for function
+/// pointers (it may be uninitialized or incomplete), we now use Andersen's pointer
+/// analysis results from the pre-computed call graph, which soundly resolves all
+/// possible indirect call targets.
+void AbstractInterpretation::handleFunCall(const CallICFGNode *callNode)
 {
     AbstractState& as = getAbsStateFromTrace(callNode);
-
     abstractTrace[callNode] = as;
 
-    const FunObjVar *calleeFun =callNode->getCalledFunction();
-    if (Options::HandleRecur() == WIDEN_ONLY || Options::HandleRecur() == WIDEN_NARROW)
+    // Skip recursive callsites (within SCC); entry calls are not skipped
+    if (skipRecursiveCall(callNode))
+        return;
+
+    // Direct call: callee is known
+    if (const FunObjVar* callee = callNode->getCalledFunction())
     {
-        // If this CallICFGNode is a recursive callsite (i.e. this Node
-        // resides in a recursive function 'fun' and its callee function is
-        // in the same SCC with the fun), then skip it. Since the callee
-        // function is handled during the handling of WTO of the whole recursion.
-        if (isRecursiveCallSite(callNode, calleeFun))
-            return;
-    }
-    else
-    {
-        // When Options::HandleRecur() == TOP, skipRecursiveCall will handle recursions,
-        // thus should not reach this branch
-        assert(false && "Recursion mode TOP should not reach here!");
+        const ICFGNode* calleeEntry = icfg->getFunEntryICFGNode(callee);
+        handleFunction(calleeEntry, callNode);
+        const RetICFGNode* retNode = callNode->getRetICFGNode();
+        abstractTrace[retNode] = abstractTrace[callNode];
+        return;
     }
 
-    callSiteStack.push_back(callNode);
-
-    const ICFGWTO* wto = funcToWTO[calleeFun];
-    handleWTOComponents(wto->getWTOComponents());
-
-    callSiteStack.pop_back();
-    // handle Ret node
-    const RetICFGNode *retNode = callNode->getRetICFGNode();
-    // resume ES to callnode
+    // Indirect call: use Andersen's call graph to get all resolved callees.
+    // The call graph was built during PreAnalysis::initWTO() by running Andersen's pointer analysis,
+    // which over-approximates the set of possible targets for each indirect callsite.
+    if (callGraph->hasIndCSCallees(callNode))
+    {
+        const auto& callees = callGraph->getIndCSCallees(callNode);
+        for (const FunObjVar* callee : callees)
+        {
+            if (callee->isDeclaration())
+                continue;
+            const ICFGNode* calleeEntry = icfg->getFunEntryICFGNode(callee);
+            handleFunction(calleeEntry, callNode);
+        }
+    }
+    const RetICFGNode* retNode = callNode->getRetICFGNode();
     abstractTrace[retNode] = abstractTrace[callNode];
 }
 
-bool AbstractInterpretation::isIndirectCall(const CallICFGNode *callNode)
-{
-    const auto callsiteMaps = svfir->getIndirectCallsites();
-    return callsiteMaps.find(callNode) != callsiteMaps.end();
-}
-
-void AbstractInterpretation::indirectCallFunPass(const CallICFGNode *callNode)
-{
-    AbstractState& as = getAbsStateFromTrace(callNode);
-    const auto callsiteMaps = svfir->getIndirectCallsites();
-    NodeID call_id = callsiteMaps.at(callNode);
-    if (!as.inVarToAddrsTable(call_id))
-    {
-        return;
-    }
-    AbstractValue Addrs = as[call_id];
-    NodeID addr = *Addrs.getAddrs().begin();
-    SVFVar *func_var = svfir->getGNode(as.getIDFromAddr(addr));
-
-    if(const FunObjVar* funObjVar = SVFUtil::dyn_cast<FunObjVar>(func_var))
-    {
-        if (Options::HandleRecur() == WIDEN_ONLY || Options::HandleRecur() == WIDEN_NARROW)
-        {
-            if (isRecursiveCallSite(callNode, funObjVar))
-                return;
-        }
-
-        const FunObjVar* callfun = funObjVar->getFunction();
-        callSiteStack.push_back(callNode);
-        abstractTrace[callNode] = as;
-
-        const ICFGWTO* wto = funcToWTO[callfun];
-        handleWTOComponents(wto->getWTOComponents());
-        callSiteStack.pop_back();
-        // handle Ret node
-        const RetICFGNode* retNode = callNode->getRetICFGNode();
-        abstractTrace[retNode] = abstractTrace[callNode];
-    }
-}
-
-/// handle wto cycle (loop)
-void AbstractInterpretation::handleCycleWTO(const ICFGCycleWTO*cycle)
+/// Handle WTO cycle (loop or recursive function) using widening/narrowing iteration.
+///
+/// Widening is applied at the cycle head to ensure termination of the analysis.
+/// The cycle head's abstract state is iteratively updated until a fixpoint is reached.
+///
+/// == What is being widened ==
+/// The abstract state at the cycle head node, which includes:
+/// - Variable values (intervals) that may change across loop iterations
+/// - For example, a loop counter `i` starting at 0 and incrementing each iteration
+///
+/// == Regular loops (non-recursive functions) ==
+/// All modes (TOP/WIDEN_ONLY/WIDEN_NARROW) behave the same for regular loops:
+/// 1. Widening phase: Iterate until the cycle head state stabilizes
+///    Example: for(i=0; i<100; i++) -> i widens to [0, +inf]
+/// 2. Narrowing phase: Refine the over-approximation from widening
+///    Example: [0, +inf] narrows to [0, 100] using loop condition
+///
+/// == Recursive function cycles ==
+/// Behavior depends on Options::HandleRecur():
+///
+/// - TOP mode:
+///     Does not iterate. Calls handleRecursiveCall() to set all stores and
+///     return value to TOP immediately. This is the most conservative but fastest.
+///     Example:
+///       int factorial(int n) { return n <= 1 ? 1 : n * factorial(n-1); }
+///       factorial(5) -> returns [-inf, +inf]
+///
+/// - WIDEN_ONLY mode:
+///     Widening phase only, no narrowing for recursive functions.
+///     The recursive function body is analyzed with widening until fixpoint.
+///     Example:
+///       int factorial(int n) { return n <= 1 ? 1 : n * factorial(n-1); }
+///       factorial(5) -> returns [10000, +inf] (widened upper bound)
+///
+/// - WIDEN_NARROW mode:
+///     Both widening and narrowing phases for recursive functions.
+///     After widening reaches fixpoint, narrowing refines the result.
+///     Example:
+///       int factorial(int n) { return n <= 1 ? 1 : n * factorial(n-1); }
+///       factorial(5) -> returns [10000, 10000] (precise after narrowing)
+void AbstractInterpretation::handleLoopOrRecursion(const ICFGCycleWTO* cycle, const CallICFGNode* caller)
 {
     const ICFGNode* cycle_head = cycle->head()->getICFGNode();
-    // Flag to indicate if we are in the increasing phase
+
+    // TOP mode for recursive function cycles: use handleRecursiveCall to set
+    // all stores and return value to TOP, maintaining original semantics
+    if (Options::HandleRecur() == TOP && isRecursiveFun(cycle_head->getFun()))
+    {
+        if (caller)
+        {
+            handleRecursiveCall(caller);
+        }
+        return;
+    }
+
+    // WIDEN_ONLY / WIDEN_NARROW modes (and regular loops): iterate until fixpoint
     bool increasing = true;
-    // Infinite loop until a fixpoint is reached,
+    u32_t widen_delay = Options::WidenDelay();
+
     for (u32_t cur_iter = 0;; cur_iter++)
     {
-        // Start widening or narrowing if cur_iter >= widen threshold (widen delay)
-        if (cur_iter >= Options::WidenDelay())
+        // Get the abstract state before processing the cycle head
+        AbstractState prev_head_state;
+        if (hasAbsStateFromTrace(cycle_head))
+            prev_head_state = abstractTrace[cycle_head];
+
+        // Process the cycle head node
+        handleICFGNode(cycle_head);
+        AbstractState cur_head_state = abstractTrace[cycle_head];
+
+        // Start widening or narrowing if cur_iter >= widen delay threshold
+        if (cur_iter >= widen_delay)
         {
-            // Widen or narrow after processing cycle head node
-            AbstractState prev_head_state = abstractTrace[cycle_head];
-            handleWTOComponent(cycle->head());
-            AbstractState cur_head_state = abstractTrace[cycle_head];
             if (increasing)
             {
-
-                if (isRecursiveFun(cycle->head()->getICFGNode()->getFun()) &&
-                        !(Options::HandleRecur() == WIDEN_ONLY ||
-                          Options::HandleRecur() == WIDEN_NARROW))
-                {
-                    // When Options::HandleRecur() == TOP, skipRecursiveCall will handle recursions,
-                    // thus should not reach this branch
-                    assert(false && "Recursion mode TOP should not reach here!");
-                }
-
-                // Widening
+                // Apply widening operator
                 abstractTrace[cycle_head] = prev_head_state.widening(cur_head_state);
 
                 if (abstractTrace[cycle_head] == prev_head_state)
                 {
+                    // Widening fixpoint reached, switch to narrowing phase
                     increasing = false;
                     continue;
                 }
             }
             else
             {
-                // Narrowing, use different modes for nodes within recursions
-                if (isRecursiveFun(cycle->head()->getICFGNode()->getFun()))
+                // Narrowing phase - check if narrowing should be applied
+                if (!shouldApplyNarrowing(cycle_head->getFun()))
                 {
-                    // For nodes in recursions, skip narrowing in WIDEN_TOP mode
-                    if (Options::HandleRecur() == WIDEN_ONLY)
-                    {
-                        break;
-                    }
-                    // Perform normal narrowing in WIDEN_NARROW mode
-                    else if (Options::HandleRecur() == WIDEN_NARROW)
-                    {
-                        // Widening's fixpoint reached in the widening phase, switch to narrowing
-                        abstractTrace[cycle_head] = prev_head_state.narrowing(cur_head_state);
-                        if (abstractTrace[cycle_head] == prev_head_state)
-                        {
-                            // Narrowing's fixpoint reached in the narrowing phase, exit loop
-                            break;
-                        }
-                    }
-                    // When Options::HandleRecur() == TOP, skipRecursiveCall will handle recursions,
-                    // thus should not reach this branch
-                    else
-                    {
-                        assert(false && "Recursion mode TOP should not reach here");
-                    }
+                    break;
                 }
-                // For nodes outside recursions, perform normal narrowing
-                else
+
+                // Apply narrowing
+                abstractTrace[cycle_head] = prev_head_state.narrowing(cur_head_state);
+                if (abstractTrace[cycle_head] == prev_head_state)
                 {
-                    // Widening's fixpoint reached in the widening phase, switch to narrowing
-                    abstractTrace[cycle_head] = prev_head_state.narrowing(cur_head_state);
-                    if (abstractTrace[cycle_head] == prev_head_state)
-                    {
-                        // Narrowing's fixpoint reached in the narrowing phase, exit loop
-                        break;
-                    }
+                    // Narrowing fixpoint reached, exit loop
+                    break;
                 }
             }
         }
-        else
+
+        // Process cycle body components
+        for (const ICFGWTOComp* comp : cycle->getWTOComponents())
         {
-            // Handle the cycle head
-            handleWTOComponent(cycle->head());
+            if (const ICFGSingletonWTO* singleton = SVFUtil::dyn_cast<ICFGSingletonWTO>(comp))
+            {
+                handleICFGNode(singleton->getICFGNode());
+            }
+            else if (const ICFGCycleWTO* subCycle = SVFUtil::dyn_cast<ICFGCycleWTO>(comp))
+            {
+                // Handle nested cycle recursively
+                handleLoopOrRecursion(subCycle, caller);
+            }
         }
-        // Handle the cycle body
-        handleWTOComponents(cycle->getWTOComponents());
     }
 }
 
@@ -920,7 +1114,8 @@ void AbstractInterpretation::handleSVFStatement(const SVFStmt *stmt)
            !getAbsStateFromTrace(stmt->getICFGNode())[IRGraph::NullPtr].isAddr());
 }
 
-void AbstractInterpretation::SkipRecursiveCall(const CallICFGNode *callNode)
+/// Set all store values in a recursive function to TOP (used in TOP mode)
+void AbstractInterpretation::setTopToObjInRecursion(const CallICFGNode *callNode)
 {
     AbstractState& as = getAbsStateFromTrace(callNode);
     const RetICFGNode *retNode = callNode->getRetICFGNode();
@@ -997,15 +1192,39 @@ void AEStat::finializeStat()
         generalNumMap["ES_Loc_Addr_AVG_Num"] /= count;
     }
     generalNumMap["SVF_STMT_NUM"] = count;
-    generalNumMap["ICFG_Node_Num"] = _ae->svfir->getICFG()->nodeNum;
+
+    u32_t totalICFGNodes = _ae->svfir->getICFG()->nodeNum;
+    generalNumMap["ICFG_Node_Num"] = totalICFGNodes;
+
+    // Calculate coverage: use allAnalyzedNodes which tracks all nodes across all entry points
+    u32_t analyzedNodes = _ae->allAnalyzedNodes.size();
+    generalNumMap["Analyzed_ICFG_Node_Num"] = analyzedNodes;
+
+    // Coverage percentage (stored as integer percentage * 100 for precision)
+    if (totalICFGNodes > 0)
+    {
+        double coveragePercent = (double)analyzedNodes / (double)totalICFGNodes * 100.0;
+        generalNumMap["ICFG_Coverage_Percent"] = (u32_t)(coveragePercent * 100); // Store as percentage * 100
+    }
+    else
+    {
+        generalNumMap["ICFG_Coverage_Percent"] = 0;
+    }
+
     u32_t callSiteNum = 0;
     u32_t extCallSiteNum = 0;
     Set<const FunObjVar *> funs;
+    Set<const FunObjVar *> analyzedFuns;
     for (const auto &it: *_ae->svfir->getICFG())
     {
         if (it.second->getFun())
         {
             funs.insert(it.second->getFun());
+            // Check if this node was analyzed (across all entry points)
+            if (_ae->allAnalyzedNodes.find(it.second) != _ae->allAnalyzedNodes.end())
+            {
+                analyzedFuns.insert(it.second->getFun());
+            }
         }
         if (const CallICFGNode *callNode = dyn_cast<CallICFGNode>(it.second))
         {
@@ -1020,6 +1239,19 @@ void AEStat::finializeStat()
         }
     }
     generalNumMap["Func_Num"] = funs.size();
+    generalNumMap["Analyzed_Func_Num"] = analyzedFuns.size();
+
+    // Function coverage percentage
+    if (funs.size() > 0)
+    {
+        double funcCoveragePercent = (double)analyzedFuns.size() / (double)funs.size() * 100.0;
+        generalNumMap["Func_Coverage_Percent"] = (u32_t)(funcCoveragePercent * 100); // Store as percentage * 100
+    }
+    else
+    {
+        generalNumMap["Func_Coverage_Percent"] = 0;
+    }
+
     generalNumMap["EXT_CallSite_Num"] = extCallSiteNum;
     generalNumMap["NonEXT_CallSite_Num"] = callSiteNum;
     timeStatMap["Total_Time(sec)"] = (double)(endTime - startTime) / TIMEINTERVAL;
@@ -1048,8 +1280,16 @@ void AEStat::performStat()
     unsigned field_width = 30;
     for (NUMStatMap::iterator it = generalNumMap.begin(), eit = generalNumMap.end(); it != eit; ++it)
     {
-        // format out put with width 20 space
-        std::cout << std::setw(field_width) << it->first << it->second << "\n";
+        // Special handling for percentage fields (stored as percentage * 100)
+        if (it->first == "ICFG_Coverage_Percent" || it->first == "Func_Coverage_Percent")
+        {
+            double percent = (double)it->second / 100.0;
+            std::cout << std::setw(field_width) << it->first << std::fixed << std::setprecision(2) << percent << "%\n";
+        }
+        else
+        {
+            std::cout << std::setw(field_width) << it->first << it->second << "\n";
+        }
     }
     SVFUtil::outs() << "-------------------------------------------------------\n";
     for (TIMEStatMap::iterator it = timeStatMap.begin(), eit = timeStatMap.end(); it != eit; ++it)
@@ -1373,6 +1613,13 @@ void AbstractInterpretation::updateStateOnCmp(const CmpStmt *cmp)
                 case CmpStmt::FCMP_TRUE:
                     resVal = IntervalValue(1, 1);
                     break;
+                case CmpStmt::FCMP_ORD:
+                case CmpStmt::FCMP_UNO:
+                    // FCMP_ORD: true if both operands are not NaN
+                    // FCMP_UNO: true if either operand is NaN
+                    // Conservatively return [0, 1] since we don't track NaN
+                    resVal = IntervalValue(0, 1);
+                    break;
                 default:
                     assert(false && "undefined compare: ");
                 }
@@ -1486,6 +1733,13 @@ void AbstractInterpretation::updateStateOnCmp(const CmpStmt *cmp)
                     break;
                 case CmpStmt::FCMP_TRUE:
                     resVal = IntervalValue(1, 1);
+                    break;
+                case CmpStmt::FCMP_ORD:
+                case CmpStmt::FCMP_UNO:
+                    // FCMP_ORD: true if both operands are not NaN
+                    // FCMP_UNO: true if either operand is NaN
+                    // Conservatively return [0, 1] since we don't track NaN
+                    resVal = IntervalValue(0, 1);
                     break;
                 default:
                     assert(false && "undefined compare: ");

@@ -367,10 +367,10 @@ AliasResult DDAPass::alias(NodeID node1, NodeID node2)
     SVFUtil::outs() << "DDAPass::alias Got called with " << node1 << " and " << node2 << "\n";
     SVFIR* pag = _pta->getPAG();
 
-    if (pag->isValidTopLevelPtr(pag->getGNode(node1)))
+    if(pag->isValidTopLevelPtr(pag->getSVFVar(node1)))
         _pta->computeDDAPts(node1);
 
-    if (pag->isValidTopLevelPtr(pag->getGNode(node2)))
+    if(pag->isValidTopLevelPtr(pag->getSVFVar(node2)))
         _pta->computeDDAPts(node2);
 
     return _pta->alias(node1, node2);

@@ -32,10 +32,13 @@
 #include "AE/Core/AbstractState.h"
 #include "AE/Core/ICFGWTO.h"
 #include "AE/Svfexe/AEDetector.h"
+#include "AE/Svfexe/PreAnalysis.h"
 #include "AE/Svfexe/AbsExtAPI.h"
 #include "Util/SVFBugReport.h"
 #include "Util/SVFStat.h"
 #include "Graphs/SCC.h"
+#include "Graphs/CallGraph.h"
+#include <deque>
 
 namespace SVF
 {
@@ -109,8 +112,6 @@ class AbstractInterpretation
     friend class NullptrDerefDetector;
 
 public:
-    typedef SCCDetection<CallGraph*> CallGraphSCC;
-
     /*
      * For recursive test case
      * int demo(int a) {
@@ -143,6 +144,13 @@ public:
 
     /// Program entry
     void analyse();
+
+    /// Analyze all entry points (functions without callers)
+    void analyzeFromAllProgEntries();
+
+    /// Get all entry point functions (functions without callers)
+    std::deque<const FunObjVar*> collectProgEntryFuns();
+
 
     static AbstractInterpretation& getAEInstance()
     {
@@ -180,9 +188,6 @@ private:
     /// Global ICFGNode is handled at the entry of the program,
     virtual void handleGlobalNode();
 
-    /// Compute IWTO for each function partition entry
-    void initWTO();
-
     /**
      * Check if execution state exist by merging states of predecessor nodes
      *
@@ -218,12 +223,38 @@ private:
      *
      * @param cycle WTOCycle which has weak topo order of basic blocks and nested cycles
      */
-    virtual void handleCycleWTO(const ICFGCycleWTO* cycle);
+    virtual void handleLoopOrRecursion(const ICFGCycleWTO* cycle, const CallICFGNode* caller = nullptr);
 
-    void handleWTOComponents(const std::list<const ICFGWTOComp*>& wtoComps);
+    /**
+     * Handle a function using worklist algorithm
+     *
+     * @param funEntry The entry node of the function to handle
+     */
+    void handleFunction(const ICFGNode* funEntry, const CallICFGNode* caller = nullptr);
 
-    void handleWTOComponent(const ICFGWTOComp* wtoComp);
+    /**
+     * Handle an ICFG node by merging states and processing statements
+     *
+     * @param node The ICFG node to handle
+     * @return true if state changed, false if fixpoint reached or infeasible
+     */
+    bool handleICFGNode(const ICFGNode* node);
 
+    /**
+     * Get the next nodes of a node within the same function
+     *
+     * @param node The node to get successors for
+     * @return Vector of successor nodes
+     */
+    std::vector<const ICFGNode*> getNextNodes(const ICFGNode* node) const;
+
+    /**
+     * Get the next nodes outside a cycle
+     *
+     * @param cycle The cycle to get exit successors for
+     * @return Vector of successor nodes outside the cycle
+     */
+    std::vector<const ICFGNode*> getNextNodesOfCycle(const ICFGCycleWTO* cycle) const;
 
     /**
      * handle SVF Statement like CmpStmt, CallStmt, GepStmt, LoadStmt, StoreStmt, etc.
@@ -232,12 +263,7 @@ private:
      */
     virtual void handleSVFStatement(const SVFStmt* stmt);
 
-    /**
-     * Check if this callnode is recursive call and skip it.
-     *
-     * @param callnode CallICFGNode which calls a recursive function
-     */
-    virtual void SkipRecursiveCall(const CallICFGNode* callnode);
+    virtual void setTopToObjInRecursion(const CallICFGNode* callnode);
 
 
     /**
@@ -293,12 +319,10 @@ private:
     AEAPI* api{nullptr};
 
     ICFG* icfg;
+    CallGraph* callGraph;
     AEStat* stat;
 
-    std::vector<const CallICFGNode*> callSiteStack;
-    Map<const FunObjVar*, const ICFGWTO*> funcToWTO;
-    Set<std::pair<const CallICFGNode*, NodeID>> nonRecursiveCallSites;
-    Set<const FunObjVar*> recursiveFuns;
+    PreAnalysis* preAnalysis{nullptr};
 
 
     bool hasAbsStateFromTrace(const ICFGNode* node)
@@ -313,20 +337,21 @@ private:
 
     // helper functions in handleCallSite
     virtual bool isExtCall(const CallICFGNode* callNode);
-    virtual void extCallPass(const CallICFGNode* callNode);
+    virtual void handleExtCall(const CallICFGNode* callNode);
     virtual bool isRecursiveFun(const FunObjVar* fun);
-    virtual bool isRecursiveCall(const CallICFGNode* callNode);
-    virtual void recursiveCallPass(const CallICFGNode *callNode);
+    virtual void handleRecursiveCall(const CallICFGNode *callNode);
     virtual bool isRecursiveCallSite(const CallICFGNode* callNode, const FunObjVar *);
-    virtual bool isDirectCall(const CallICFGNode* callNode);
-    virtual void directCallFunPass(const CallICFGNode* callNode);
-    virtual bool isIndirectCall(const CallICFGNode* callNode);
-    virtual void indirectCallFunPass(const CallICFGNode* callNode);
+    virtual void handleFunCall(const CallICFGNode* callNode);
+
+    bool skipRecursiveCall(const CallICFGNode* callNode);
+    const FunObjVar* getCallee(const CallICFGNode* callNode);
+    bool shouldApplyNarrowing(const FunObjVar* fun);
 
     // there data should be shared with subclasses
     Map<std::string, std::function<void(const CallICFGNode*)>> func_map;
 
     Map<const ICFGNode*, AbstractState> abstractTrace; // abstract states immediately after nodes
+    Set<const ICFGNode*> allAnalyzedNodes; // All nodes ever analyzed (across all entry points)
     std::string moduleName;
 
     std::vector<std::unique_ptr<AEDetector>> detectors;

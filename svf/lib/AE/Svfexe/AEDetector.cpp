@@ -313,7 +313,7 @@ void BufOverflowDetector::detectExtAPI(AbstractState& as,
 IntervalValue BufOverflowDetector::getAccessOffset(SVF::AbstractState& as, SVF::NodeID objId, const SVF::GepStmt* gep)
 {
     SVFIR* svfir = PAG::getPAG();
-    auto obj = svfir->getGNode(objId);
+    auto obj = svfir->getSVFVar(objId);
 
     if (SVFUtil::isa<BaseObjVar>(obj))
     {
@@ -351,7 +351,7 @@ void BufOverflowDetector::updateGepObjOffsetFromBase(AbstractState& as, SVF::Add
     for (const auto& objAddr : objAddrs)
     {
         NodeID objId = as.getIDFromAddr(objAddr);
-        auto obj = svfir->getGNode(objId);
+        auto obj = svfir->getSVFVar(objId);
 
         if (SVFUtil::isa<BaseObjVar>(obj))
         {
@@ -361,13 +361,13 @@ void BufOverflowDetector::updateGepObjOffsetFromBase(AbstractState& as, SVF::Add
             for (const auto& gepAddr : gepAddrs)
             {
                 NodeID gepObj = as.getIDFromAddr(gepAddr);
-                if (const GepObjVar* gepObjVar = SVFUtil::dyn_cast<GepObjVar>(svfir->getGNode(gepObj)))
+                if (const GepObjVar* gepObjVar = SVFUtil::dyn_cast<GepObjVar>(svfir->getSVFVar(gepObj)))
                 {
                     addToGepObjOffsetFromBase(gepObjVar, offset);
                 }
                 else
                 {
-                    assert(AbstractState::isInvalidMem(gepAddr) && "GEP object is neither a GepObjVar nor an invalid memory address");
+                    assert(AbstractState::isBlackHoleObjAddr(gepAddr) && "GEP object is neither a GepObjVar nor an invalid memory address");
                 }
             }
         }
@@ -380,7 +380,7 @@ void BufOverflowDetector::updateGepObjOffsetFromBase(AbstractState& as, SVF::Add
             for (const auto& gepAddr : gepAddrs)
             {
                 NodeID gepObj = as.getIDFromAddr(gepAddr);
-                if (const GepObjVar* gepObjVar = SVFUtil::dyn_cast<GepObjVar>(svfir->getGNode(gepObj)))
+                if (const GepObjVar* gepObjVar = SVFUtil::dyn_cast<GepObjVar>(svfir->getSVFVar(gepObj)))
                 {
                     if (hasGepObjOffsetFromBase(objVar))
                     {
@@ -398,7 +398,7 @@ void BufOverflowDetector::updateGepObjOffsetFromBase(AbstractState& as, SVF::Add
                 }
                 else
                 {
-                    assert(AbstractState::isInvalidMem(gepAddr) && "GEP object is neither a GepObjVar nor an invalid memory address");
+                    assert(AbstractState::isBlackHoleObjAddr(gepAddr) && "GEP object is neither a GepObjVar nor an invalid memory address");
                 }
             }
         }
@@ -479,7 +479,23 @@ bool BufOverflowDetector::canSafelyAccessMemory(AbstractState& as, const SVF::SV
     SVFIR* svfir = PAG::getPAG();
     NodeID value_id = value->getId();
 
-    assert(as[value_id].isAddr());
+    // Lazy initialization for uninitialized pointer parameters in multi-entry analysis.
+    // When analyzing a function as an entry point (e.g., not called from main),
+    // pointer parameters may not have been initialized via AddrStmt.
+    //
+    // Example:
+    //   void process_buffer(char* buf, int len) {
+    //       buf[0] = 'a';  // accessing buf
+    //   }
+    // When analyzing process_buffer as an entry point, 'buf' is a function parameter
+    // with no AddrStmt, so it has no address information in the abstract state.
+    // We lazily initialize it to point to the black hole object (BlkPtr), representing
+    // an unknown but valid memory location. This allows the analysis to continue
+    // while being conservatively sound.
+    if (!as[value_id].isAddr())
+    {
+        as[value_id] = AddressValue(BlackHoleObjAddr);
+    }
     for (const auto& addr : as[value_id].getAddrs())
     {
         NodeID objId = as.getIDFromAddr(addr);
@@ -504,11 +520,11 @@ bool BufOverflowDetector::canSafelyAccessMemory(AbstractState& as, const SVF::SV
 
         IntervalValue offset(0);
         // if the object is a GepObjVar, get the offset from the base object
-        if (SVFUtil::isa<GepObjVar>(svfir->getGNode(objId)))
+        if (SVFUtil::isa<GepObjVar>(svfir->getSVFVar(objId)))
         {
-            offset = getGepObjOffsetFromBase(SVFUtil::cast<GepObjVar>(svfir->getGNode(objId))) + len;
+            offset = getGepObjOffsetFromBase(SVFUtil::cast<GepObjVar>(svfir->getSVFVar(objId))) + len;
         }
-        else if (SVFUtil::isa<BaseObjVar>(svfir->getGNode(objId)))
+        else if (SVFUtil::isa<BaseObjVar>(svfir->getSVFVar(objId)))
         {
             // if the object is a BaseObjVar, get the offset directly
             offset = len;
@@ -687,7 +703,7 @@ bool NullptrDerefDetector::canSafelyDerefPtr(AbstractState& as, const SVFVar* va
     for (const auto &addr: AbsVal.getAddrs())
     {
         // if the addr itself is invalid mem, report unsafe
-        if (AbstractState::isInvalidMem(addr))
+        if (AbstractState::isBlackHoleObjAddr(addr))
             return false;
         // if nullptr is detected, return unsafe
         else if (AbstractState::isNullMem(addr))
