@@ -1,5 +1,10 @@
-Processing my_test.cpp with DVF
-Pointer              Pointees
-------------------------------
-p_func               x_func
-q_func               x_func, y_func
+Processing my_test.c with WPA flags: -ander
+Pointer                                                      Pointees
+k_f                                                          {}
+k.addr_f                                                     {}
+k_g                                                          {}
+k.addr_g                                                     {}
+add_g                                                        {}
+fp_main                                                      {g, f}
+call_main                                                    {}
+call5_main                                                   {}

@@ -621,7 +621,7 @@ private:
     /// Add callsite arguments
     inline void addCallSiteArgs(CallICFGNode* callBlockNode,const ValVar* arg)
     {
-        std::cout << "Adding callsite argument: " << arg->getId() << " for callsite: " << callBlockNode->getId() << "in file SVFIR.h line 570\n";
+        // std::cout << "Adding callsite argument: " << arg->getId() << " for callsite: " << callBlockNode->getId() << "in file SVFIR.h line 570\n";
         callBlockNode->addActualParms(arg);
         callSiteArgsListMap[callBlockNode].push_back(arg);
     }
