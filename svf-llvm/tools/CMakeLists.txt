@@ -2,6 +2,7 @@ add_subdirectory(SABER)
 add_subdirectory(WPA)
 add_subdirectory(Example)
 add_subdirectory(DDA)
+add_subdirectory(PTAQuery)
 add_subdirectory(MTA)
 add_subdirectory(CFL)
 add_subdirectory(LLVM2SVF)
@@ -11,6 +12,7 @@ set(ALL_TOOLS
     ae
     cfl
     dvf
+    cxt-pts
     llvm2svf
     mta
     saber
