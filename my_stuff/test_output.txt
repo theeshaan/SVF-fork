@@ -1,10 +1,15 @@
 Processing my_test.c with WPA flags: -ander
 Pointer                                                      Pointees
-k_f                                                          {}
-k.addr_f                                                     {}
-k_g                                                          {}
-k.addr_g                                                     {}
-add_g                                                        {}
-fp_main                                                      {g, f}
-call_main                                                    {}
-call5_main                                                   {}
+a_f                                                          {}
+b_f                                                          {}
+a.addr_f                                                     {}
+b.addr_f                                                     {}
+call_f                                                       {}
+a_g                                                          {}
+b_g                                                          {}
+a.addr_g                                                     {}
+b.addr_g                                                     {}
+call_g                                                       {}
+f1_foo                                                       {f}
+f1.addr_foo                                                  {f}
+p_main                                                       {}

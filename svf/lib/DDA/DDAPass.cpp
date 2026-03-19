@@ -186,7 +186,9 @@ void DDAPass::runPointerAnalysis(SVFIR* pag, u32_t kind)
         // E: Below if block is modified by me (Eshaan)
         if (Options::PrintCPts())
         {
-            _pta->dumpCPts();
+            // E: below call changed by me (Eshaan) (commented one was actual one)
+            // _pta->dumpCPts();
+            _pta->dumpAllPts();
 
             // // E:--- ADDED THIS BLOCK ---
             // if (auto* contextDDA = SVFUtil::dyn_cast<ContextDDA>(_pta.get()))

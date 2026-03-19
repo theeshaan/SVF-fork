@@ -65,4 +65,7 @@ run_case struct_array_fields \
 run_case global_pointer \
   $'gp\tg'
 
+run_case branchy_if_chain \
+  $'p_main\ta_main, b_main, c_main, d_main, e_main, f_main'
+
 echo "All cxt-pts tests passed."

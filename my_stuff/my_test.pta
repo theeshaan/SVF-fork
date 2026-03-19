@@ -1,0 +1,432 @@
+Writing 'callgraph_initial.dot'...
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 0 		PointsTo: {empty}
+
+----------------------------------------------
+
+Ptr 1 		PointsTo: {empty}
+
+----------------------------------------------
+##<Dummy Obj > id:2
+Ptr 2 		PointsTo: {empty}
+
+----------------------------------------------
+##<Dummy Obj > id:3
+Ptr 3 		PointsTo: {empty}
+
+----------------------------------------------
+##<.str> Source Loc: { Glob  }
+Ptr 4 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<__const.main.p> Source Loc: { Glob  }
+Ptr 5 		PointsTo: { 8 }
+
+!!Target NodeID 8	 [<__const.main.p> Source Loc: { Glob  }] 
+----------------------------------------------
+##<f> Source Loc: { "ln": 9, "file": "./my_test.c" }
+Ptr 6 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<g> Source Loc: { "ln": 14, "file": "./my_test.c" }
+Ptr 7 		PointsTo: { 37 }
+
+!!Target NodeID 37	 [<g> Source Loc: { "ln": 14, "file": "./my_test.c" }] 
+----------------------------------------------
+##<__const.main.p> Source Loc: { Glob  }
+Ptr 8 		PointsTo: {empty}
+
+----------------------------------------------
+##<f> Source Loc: { "ln": 9, "file": "./my_test.c" }
+Ptr 9 		PointsTo: {empty}
+
+----------------------------------------------
+##<f> Source Loc: { "ln": 9, "file": "./my_test.c" }
+Ptr 10 		PointsTo: {empty}
+
+----------------------------------------------
+##<a> Source Loc: { 0th arg f "ln": 9, "file": "./my_test.c" }
+Ptr 11 		PointsTo: {empty}
+
+----------------------------------------------
+##<b> Source Loc: { 1st arg f "ln": 9, "file": "./my_test.c" }
+Ptr 12 		PointsTo: {empty}
+
+----------------------------------------------
+##<a.addr> Source Loc: { "ln": 9, "fl": "./my_test.c" }
+Ptr 13 		PointsTo: { 14 }
+
+!!Target NodeID 14	 [<a.addr> Source Loc: { "ln": 9, "fl": "./my_test.c" }] 
+----------------------------------------------
+##<a.addr> Source Loc: { "ln": 9, "fl": "./my_test.c" }
+Ptr 14 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 15 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<b.addr> Source Loc: { "ln": 9, "fl": "./my_test.c" }
+Ptr 16 		PointsTo: { 17 }
+
+!!Target NodeID 17	 [<b.addr> Source Loc: { "ln": 9, "fl": "./my_test.c" }] 
+----------------------------------------------
+##<b.addr> Source Loc: { "ln": 9, "fl": "./my_test.c" }
+Ptr 17 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: 
+Ptr 18 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 9, "cl": 12, "fl": "./my_test.c" }
+Ptr 19 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: 
+Ptr 20 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 9, "cl": 19, "fl": "./my_test.c" }
+Ptr 21 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 11, "cl": 23, "fl": "./my_test.c" }
+Ptr 22 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 11, "cl": 26, "fl": "./my_test.c" }
+Ptr 23 		PointsTo: {empty}
+
+----------------------------------------------
+##<call> Source Loc: { "ln": 11, "cl": 5, "fl": "./my_test.c" }
+Ptr 24 		PointsTo: {empty}
+
+----------------------------------------------
+##<printf> Source Loc: 
+Ptr 25 		PointsTo: { 26 }
+
+!!Target NodeID 26	 [<printf> Source Loc: ] 
+----------------------------------------------
+##<printf> Source Loc: 
+Ptr 26 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 12, "cl": 1, "fl": "./my_test.c" }
+Ptr 27 		PointsTo: {empty}
+
+----------------------------------------------
+##<llvm.dbg.declare> Source Loc: 
+Ptr 28 		PointsTo: { 29 }
+
+!!Target NodeID 29	 [<llvm.dbg.declare> Source Loc: ] 
+----------------------------------------------
+##<llvm.dbg.declare> Source Loc: 
+Ptr 29 		PointsTo: {empty}
+
+----------------------------------------------
+##<llvm.dbg.declare> Source Loc: 
+Ptr 30 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 0th arg llvm.dbg.declare  }
+Ptr 31 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 1st arg llvm.dbg.declare  }
+Ptr 32 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 2nd arg llvm.dbg.declare  }
+Ptr 33 		PointsTo: {empty}
+
+----------------------------------------------
+##<printf> Source Loc: 
+Ptr 34 		PointsTo: {empty}
+
+----------------------------------------------
+##<printf> Source Loc: 
+Ptr 35 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 0th arg printf  }
+Ptr 36 		PointsTo: {empty}
+
+----------------------------------------------
+##<g> Source Loc: { "ln": 14, "file": "./my_test.c" }
+Ptr 37 		PointsTo: {empty}
+
+----------------------------------------------
+##<g> Source Loc: { "ln": 14, "file": "./my_test.c" }
+Ptr 38 		PointsTo: {empty}
+
+----------------------------------------------
+##<a> Source Loc: { 0th arg g "ln": 14, "file": "./my_test.c" }
+Ptr 39 		PointsTo: {empty}
+
+----------------------------------------------
+##<b> Source Loc: { 1st arg g "ln": 14, "file": "./my_test.c" }
+Ptr 40 		PointsTo: {empty}
+
+----------------------------------------------
+##<a.addr> Source Loc: { "ln": 14, "fl": "./my_test.c" }
+Ptr 41 		PointsTo: { 42 }
+
+!!Target NodeID 42	 [<a.addr> Source Loc: { "ln": 14, "fl": "./my_test.c" }] 
+----------------------------------------------
+##<a.addr> Source Loc: { "ln": 14, "fl": "./my_test.c" }
+Ptr 42 		PointsTo: {empty}
+
+----------------------------------------------
+##<b.addr> Source Loc: { "ln": 14, "fl": "./my_test.c" }
+Ptr 43 		PointsTo: { 44 }
+
+!!Target NodeID 44	 [<b.addr> Source Loc: { "ln": 14, "fl": "./my_test.c" }] 
+----------------------------------------------
+##<b.addr> Source Loc: { "ln": 14, "fl": "./my_test.c" }
+Ptr 44 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: 
+Ptr 45 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 14, "cl": 12, "fl": "./my_test.c" }
+Ptr 46 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: 
+Ptr 47 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 14, "cl": 19, "fl": "./my_test.c" }
+Ptr 48 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 16, "cl": 23, "fl": "./my_test.c" }
+Ptr 49 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 16, "cl": 26, "fl": "./my_test.c" }
+Ptr 50 		PointsTo: {empty}
+
+----------------------------------------------
+##<call> Source Loc: { "ln": 16, "cl": 5, "fl": "./my_test.c" }
+Ptr 51 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 17, "cl": 1, "fl": "./my_test.c" }
+Ptr 52 		PointsTo: {empty}
+
+----------------------------------------------
+##<foo> Source Loc: { "ln": 19, "file": "./my_test.c" }
+Ptr 53 		PointsTo: { 54 }
+
+!!Target NodeID 54	 [<foo> Source Loc: { "ln": 19, "file": "./my_test.c" }] 
+----------------------------------------------
+##<foo> Source Loc: { "ln": 19, "file": "./my_test.c" }
+Ptr 54 		PointsTo: {empty}
+
+----------------------------------------------
+##<foo> Source Loc: { "ln": 19, "file": "./my_test.c" }
+Ptr 55 		PointsTo: {empty}
+
+----------------------------------------------
+##<f1> Source Loc: { 0th arg foo "ln": 19, "file": "./my_test.c" }
+Ptr 56 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<f1.addr> Source Loc: { "ln": 19, "fl": "./my_test.c" }
+Ptr 57 		PointsTo: { 58 }
+
+!!Target NodeID 58	 [<f1.addr> Source Loc: { "ln": 19, "fl": "./my_test.c" }] 
+----------------------------------------------
+##<f1.addr> Source Loc: { "ln": 19, "fl": "./my_test.c" }
+Ptr 58 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 59 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 19, "cl": 16, "fl": "./my_test.c" }
+Ptr 60 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 21, "cl": 5, "fl": "./my_test.c" }
+Ptr 61 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 21, "cl": 5, "fl": "./my_test.c" }
+Ptr 62 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 63 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<> Source Loc: { "ln": 22, "cl": 1, "fl": "./my_test.c" }
+Ptr 64 		PointsTo: {empty}
+
+----------------------------------------------
+##<main> Source Loc: { "ln": 24, "file": "./my_test.c" }
+Ptr 65 		PointsTo: { 66 }
+
+!!Target NodeID 66	 [<main> Source Loc: { "ln": 24, "file": "./my_test.c" }] 
+----------------------------------------------
+##<main> Source Loc: { "ln": 24, "file": "./my_test.c" }
+Ptr 66 		PointsTo: {empty}
+
+----------------------------------------------
+##<main> Source Loc: { "ln": 24, "file": "./my_test.c" }
+Ptr 67 		PointsTo: {empty}
+
+----------------------------------------------
+##<p> Source Loc: { "ln": 26, "fl": "./my_test.c" }
+Ptr 68 		PointsTo: { 69 }
+
+!!Target NodeID 69	 [<p> Source Loc: { "ln": 26, "fl": "./my_test.c" }] 
+----------------------------------------------
+##<p> Source Loc: { "ln": 26, "fl": "./my_test.c" }
+Ptr 69 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 26, "cl": 18, "fl": "./my_test.c" }
+Ptr 70 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 26, "cl": 18, "fl": "./my_test.c" }
+Ptr 71 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 72 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 73 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<llvm.memcpy.p0.p0.i64> Source Loc: 
+Ptr 74 		PointsTo: { 75 }
+
+!!Target NodeID 75	 [<llvm.memcpy.p0.p0.i64> Source Loc: ] 
+----------------------------------------------
+##<llvm.memcpy.p0.p0.i64> Source Loc: 
+Ptr 75 		PointsTo: {empty}
+
+----------------------------------------------
+##<f> Source Loc: { "ln": 27, "cl": 11, "fl": "./my_test.c" }
+Ptr 76 		PointsTo: { 94 }
+
+!!Target NodeID 94	 [<> Source Loc: ] 
+----------------------------------------------
+##<> Source Loc: { constant data }
+Ptr 77 		PointsTo: { 3 }
+
+!!Target NodeID 3	 [Dummy Obj id: 3]
+----------------------------------------------
+##<> Source Loc: { "ln": 27, "cl": 11, "fl": "./my_test.c" }
+Ptr 78 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: { "ln": 27, "cl": 5, "fl": "./my_test.c" }
+Ptr 79 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { "ln": 29, "cl": 1, "fl": "./my_test.c" }
+Ptr 80 		PointsTo: {empty}
+
+----------------------------------------------
+##<llvm.memcpy.p0.p0.i64> Source Loc: 
+Ptr 81 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 0th arg llvm.memcpy.p0.p0.i64  }
+Ptr 82 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 1st arg llvm.memcpy.p0.p0.i64  }
+Ptr 83 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 2nd arg llvm.memcpy.p0.p0.i64  }
+Ptr 84 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: { 3rd arg llvm.memcpy.p0.p0.i64  }
+Ptr 85 		PointsTo: {empty}
+
+----------------------------------------------
+##<> Source Loc: 
+Ptr 86 		PointsTo: { 96 }
+
+!!Target NodeID 96	 [<> Source Loc: ] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 87 		PointsTo: { 97 }
+
+!!Target NodeID 97	 [<> Source Loc: ] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 88 		PointsTo: { 94 }
+
+!!Target NodeID 94	 [<> Source Loc: ] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 89 		PointsTo: { 96 }
+
+!!Target NodeID 96	 [<> Source Loc: ] 
+----------------------------------------------
+
+Ptr 90 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 91 		PointsTo: { 95 }
+
+!!Target NodeID 95	 [<> Source Loc: ] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 92 		PointsTo: { 97 }
+
+!!Target NodeID 97	 [<> Source Loc: ] 
+----------------------------------------------
+
+Ptr 93 		PointsTo: { 37 }
+
+!!Target NodeID 37	 [<g> Source Loc: { "ln": 14, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 94 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 95 		PointsTo: { 37 }
+
+!!Target NodeID 37	 [<g> Source Loc: { "ln": 14, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 96 		PointsTo: { 9 }
+
+!!Target NodeID 9	 [<f> Source Loc: { "ln": 9, "file": "./my_test.c" }] 
+----------------------------------------------
+##<> Source Loc: 
+Ptr 97 		PointsTo: { 37 }
+
+!!Target NodeID 37	 [<g> Source Loc: { "ln": 14, "file": "./my_test.c" }] 
+----------------------------------------------
+Writing 'callgraph_final.dot'...

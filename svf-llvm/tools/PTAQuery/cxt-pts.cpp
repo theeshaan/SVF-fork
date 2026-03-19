@@ -1,24 +1,3 @@
-//===- cxt-pts.cpp -- Context-sensitive points-to dumper -----------------===//
-//
-//                     SVF: Static Value-Flow Analysis
-//
-// Copyright (C) <2013-2022>  <Yulei Sui>
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-//===----------------------------------------------------------------------===//
-
 #include "DDA/ContextDDA.h"
 #include "DDA/DDAClient.h"
 #include "SVF-LLVM/LLVMModule.h"
@@ -249,7 +228,11 @@ struct PointerVariable
 {
     std::string name;
     const Value* storage = nullptr;
+    const Function* function = nullptr;
+    Type* storedType = nullptr;
+    std::vector<const Value*> storedValues;
     const Value* finalValue = nullptr;
+    const Value* exitQueryValue = nullptr;
 };
 
 struct PointerQuery
@@ -284,6 +267,8 @@ std::vector<PointerVariable> collectPointerVariables(Module& module)
                 if (!isa<GlobalVariable>(storage))
                     variable.name += "_" + function.getName().str();
                 variable.storage = storage;
+                variable.function = &function;
+                variable.storedType = store->getValueOperand()->getType();
                 indexByStorage[storage] = variables.size();
                 variables.push_back(variable);
                 found = indexByStorage.find(storage);
@@ -292,7 +277,50 @@ std::vector<PointerVariable> collectPointerVariables(Module& module)
             if (found == indexByStorage.end())
                 continue;
 
+            variables[found->second].storedValues.push_back(store->getValueOperand()->stripPointerCasts());
             variables[found->second].finalValue = store->getValueOperand()->stripPointerCasts();
+        }
+    }
+
+    for (PointerVariable& variable : variables)
+    {
+        if (variable.function == nullptr || variable.storedType == nullptr)
+            continue;
+
+        if (variable.storedValues.size() <= 1)
+            continue;
+
+        ReturnInst* uniqueReturn = nullptr;
+        for (BasicBlock& block : *const_cast<Function*>(variable.function))
+        {
+            auto* ret = dyn_cast<ReturnInst>(block.getTerminator());
+            if (ret == nullptr)
+                continue;
+
+            if (uniqueReturn != nullptr)
+            {
+                uniqueReturn = nullptr;
+                break;
+            }
+
+            uniqueReturn = ret;
+        }
+
+        if (uniqueReturn == nullptr)
+            continue;
+
+        llvm::IRBuilder<> builder(uniqueReturn);
+        variable.exitQueryValue = builder.CreateLoad(
+            variable.storedType,
+            const_cast<Value*>(variable.storage),
+            "__svf_exit_" + variable.name);
+    }
+
+    for (PointerVariable& variable : variables)
+    {
+        if (variable.exitQueryValue != nullptr)
+        {
+            variable.finalValue = variable.exitQueryValue;
         }
     }
 
