@@ -1,19 +1,10 @@
 #include <stdio.h>
 int main()
 {
-    int *p;
-    int a,b,c,d,e,f;
-    scanf("%d %d %d %d %d %d", &a, &b, &c, &d, &e, &f);
-    if (a)
-        p = &a;
-    else if (b)
-        p = &b;
-    else if (c)
-        p = &c;
-    else if (d)
-        p = &d;
-    else if (e)
-        p = &e;
-    else
-        p = &f;
+    int a = 10;
+    int b = 20;
+
+    int *pA = &a;
+    int *pB = &b;
+    pA = pB;
 }

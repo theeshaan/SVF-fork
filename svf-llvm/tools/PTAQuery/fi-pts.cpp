@@ -1,5 +1,4 @@
-#include "DDA/ContextDDA.h"
-#include "DDA/DDAClient.h"
+#include "WPA/Andersen.h"
 #include "SVF-LLVM/LLVMModule.h"
 #include "SVF-LLVM/LLVMUtil.h"
 #include "SVF-LLVM/SVFIRBuilder.h"
@@ -25,6 +24,8 @@ using namespace llvm;
 
 namespace
 {
+
+std::string renderStorageName(const Value* value);
 
 std::string findExtAPIPath()
 {
@@ -113,6 +114,24 @@ const llvm::DIVariable* getDebugVariableForAlloca(const AllocaInst* allocaInst)
     return nullptr;
 }
 
+const llvm::DIGlobalVariable* getDebugVariableForGlobal(const GlobalVariable* globalVar)
+{
+    if (globalVar == nullptr)
+        return nullptr;
+
+    SmallVector<DIGlobalVariableExpression*, 4> globalExprs;
+    globalVar->getDebugInfo(globalExprs);
+    for (const auto* expr : globalExprs)
+    {
+        if (expr == nullptr)
+            continue;
+        if (const auto* var = expr->getVariable())
+            return var;
+    }
+
+    return nullptr;
+}
+
 const llvm::DIType* unwrapDebugType(const llvm::DIType* type)
 {
     const llvm::DIType* current = type;
@@ -125,14 +144,26 @@ const llvm::DIType* unwrapDebugType(const llvm::DIType* type)
     return current;
 }
 
-std::string getStructFieldName(const AllocaInst* allocaInst, const GEPOperator* gep)
+const llvm::DICompositeType* getDebugCompositeTypeForValue(const Value* value)
 {
-    const llvm::DIVariable* divar = getDebugVariableForAlloca(allocaInst);
-    if (divar == nullptr)
-        return "";
+    if (const auto* allocaInst = dyn_cast_or_null<AllocaInst>(value))
+    {
+        if (const llvm::DIVariable* divar = getDebugVariableForAlloca(allocaInst))
+            return dyn_cast_or_null<DICompositeType>(unwrapDebugType(divar->getType()));
+    }
 
-    const llvm::DIType* type = unwrapDebugType(divar->getType());
-    const auto* composite = dyn_cast_or_null<DICompositeType>(type);
+    if (const auto* globalVar = dyn_cast_or_null<GlobalVariable>(value))
+    {
+        if (const llvm::DIGlobalVariable* divar = getDebugVariableForGlobal(globalVar))
+            return dyn_cast_or_null<DICompositeType>(unwrapDebugType(divar->getType()));
+    }
+
+    return nullptr;
+}
+
+std::string getStructFieldName(const Value* baseValue, const GEPOperator* gep)
+{
+    const auto* composite = getDebugCompositeTypeForValue(baseValue);
     if (composite == nullptr)
         return "";
 
@@ -162,6 +193,31 @@ std::string getStructFieldName(const AllocaInst* allocaInst, const GEPOperator* 
     return member->getName().str();
 }
 
+std::string renderPointerBaseName(const Value* value)
+{
+    if (value == nullptr)
+        return "(unknown)";
+
+    if (const auto* load = dyn_cast<LoadInst>(value))
+        return renderStorageName(load->getPointerOperand());
+
+    return renderStorageName(value);
+}
+
+bool isGlobalStorage(const Value* value)
+{
+    if (value == nullptr)
+        return false;
+
+    if (isa<GlobalVariable>(value))
+        return true;
+
+    if (const auto* gep = dyn_cast<GEPOperator>(value))
+        return isGlobalStorage(gep->getPointerOperand()->stripPointerCasts());
+
+    return false;
+}
+
 std::string renderObjectName(const SVFVar* obj)
 {
     if (obj == nullptr)
@@ -179,6 +235,38 @@ std::string renderObjectName(const SVFVar* obj)
         return name;
     }
 
+    LLVMModuleSet* llvmModuleSet = LLVMModuleSet::getLLVMModuleSet();
+    if (llvmModuleSet->hasLLVMValue(obj))
+    {
+        const Value* llvmValue = llvmModuleSet->getLLVMValue(obj);
+        std::string llvmName = renderValueName(llvmValue);
+        if (const FunObjVar* fun = obj->getFunction())
+            return llvmName + "_" + fun->getName();
+        return llvmName;
+    }
+
+    if (const auto* gepObj = SVFUtil::dyn_cast<GepObjVar>(obj))
+    {
+        std::ostringstream oss;
+        oss << renderObjectName(gepObj->getBaseObj()) << ".offset" << gepObj->getConstantFieldIdx();
+        return oss.str();
+    }
+
+    if (const auto* baseObj = SVFUtil::dyn_cast<BaseObjVar>(obj))
+    {
+        if (const ICFGNode* icfgNode = baseObj->getICFGNode())
+        {
+            if (llvmModuleSet->hasLLVMValue(icfgNode))
+            {
+                const Value* llvmValue = llvmModuleSet->getLLVMValue(icfgNode);
+                std::string llvmName = renderValueName(llvmValue);
+                if (const FunObjVar* fun = obj->getFunction())
+                    return llvmName + "_" + fun->getName();
+                return llvmName;
+            }
+        }
+    }
+
     return renderSVFVar(obj);
 }
 
@@ -190,18 +278,30 @@ std::string renderStorageName(const Value* value)
     if (isa<AllocaInst>(value) || isa<GlobalVariable>(value))
         return renderValueName(value);
 
+    if (const auto* load = dyn_cast<LoadInst>(value))
+        return renderStorageName(load->getPointerOperand());
+
     if (const auto* gep = dyn_cast<GEPOperator>(value))
     {
         std::ostringstream oss;
         const Value* basePointer = gep->getPointerOperand()->stripPointerCasts();
-        oss << renderStorageName(basePointer);
+        oss << renderPointerBaseName(basePointer);
 
-        if (const auto* allocaInst = dyn_cast<AllocaInst>(basePointer))
+        std::string fieldName = getStructFieldName(basePointer, gep);
+        if (!fieldName.empty())
         {
-            std::string fieldName = getStructFieldName(allocaInst, gep);
-            if (!fieldName.empty())
+            oss << "." << fieldName;
+            return oss.str();
+        }
+
+        std::string gepName = gep->getName().str();
+        if (!gepName.empty())
+        {
+            while (!gepName.empty() && std::isdigit(static_cast<unsigned char>(gepName.back())))
+                gepName.pop_back();
+            if (!gepName.empty())
             {
-                oss << "." << fieldName;
+                oss << "." << gepName;
                 return oss.str();
             }
         }
@@ -229,39 +329,22 @@ struct PointerVariable
     std::string name;
     const Value* storage = nullptr;
     const Function* function = nullptr;
+    Type* storedType = nullptr;
+    std::vector<const Value*> storedValues;
+    const Value* finalValue = nullptr;
+    const Value* exitQueryValue = nullptr;
 };
 
 struct PointerQuery
 {
-    std::string location;
     std::string name;
     NodeID rhsNodeId = 0;
-    ContextCond context;
 };
 
-ContextCond buildQueryContext(ContextDDA* pta, const Value* value);
-
-std::string renderLocation(const Instruction& inst)
+std::vector<PointerVariable> collectPointerVariables(Module& module)
 {
-    const DebugLoc& debugLoc = inst.getDebugLoc();
-    if (!debugLoc)
-        return "(unknown)";
-
-    const DILocation* location = debugLoc.get();
-    if (location == nullptr)
-        return "(unknown)";
-
-    std::ostringstream oss;
-    oss << location->getFilename().str() << ":" << location->getLine();
-    return oss.str();
-}
-
-std::vector<PointerQuery> collectPointerQueries(Module& module, ContextDDA* pta, SVFIR* pag)
-{
-    std::vector<PointerQuery> queries;
-    std::map<const Value*, std::size_t> indexByStorage;
     std::vector<PointerVariable> variables;
-    LLVMModuleSet* llvmModuleSet = LLVMModuleSet::getLLVMModuleSet();
+    std::map<const Value*, std::size_t> indexByStorage;
 
     for (Function& function : module)
     {
@@ -280,10 +363,11 @@ std::vector<PointerQuery> collectPointerQueries(Module& module, ContextDDA* pta,
             {
                 PointerVariable variable;
                 variable.name = renderStorageName(storage);
-                if (!isa<GlobalVariable>(storage))
+                if (!isGlobalStorage(storage))
                     variable.name += "_" + function.getName().str();
                 variable.storage = storage;
                 variable.function = &function;
+                variable.storedType = store->getValueOperand()->getType();
                 indexByStorage[storage] = variables.size();
                 variables.push_back(variable);
                 found = indexByStorage.find(storage);
@@ -292,70 +376,64 @@ std::vector<PointerQuery> collectPointerQueries(Module& module, ContextDDA* pta,
             if (found == indexByStorage.end())
                 continue;
 
-            const Value* queryValue = store->getValueOperand()->stripPointerCasts();
-            ContextCond queryContext = buildQueryContext(pta, queryValue);
-            NodeID rhsNodeId = 0;
-
-            if (const auto* call = dyn_cast<CallBase>(queryValue))
-            {
-                if (const Function* calleeFun = call->getCalledFunction())
-                    rhsNodeId = llvmModuleSet->getReturnNode(calleeFun);
-            }
-
-            if (rhsNodeId == 0)
-            {
-                if (!llvmModuleSet->hasValueNode(queryValue))
-                    continue;
-                rhsNodeId = llvmModuleSet->getValueNode(queryValue);
-            }
-
-            const SVFVar* rhsNode = pag->getSVFVar(rhsNodeId);
-            if (rhsNode == nullptr || !pag->isValidTopLevelPtr(rhsNode))
-                continue;
-
-            PointerQuery query;
-            query.location = renderLocation(inst);
-            query.name = variables[found->second].name;
-            query.rhsNodeId = rhsNodeId;
-            query.context = std::move(queryContext);
-            queries.push_back(std::move(query));
+            variables[found->second].storedValues.push_back(store->getValueOperand()->stripPointerCasts());
+            variables[found->second].finalValue = store->getValueOperand()->stripPointerCasts();
         }
     }
 
-    return queries;
+    for (PointerVariable& variable : variables)
+    {
+        if (variable.function == nullptr || variable.storedType == nullptr)
+            continue;
+
+        if (variable.storedValues.size() <= 1)
+            continue;
+
+        ReturnInst* uniqueReturn = nullptr;
+        for (BasicBlock& block : *const_cast<Function*>(variable.function))
+        {
+            auto* ret = dyn_cast<ReturnInst>(block.getTerminator());
+            if (ret == nullptr)
+                continue;
+
+            if (uniqueReturn != nullptr)
+            {
+                uniqueReturn = nullptr;
+                break;
+            }
+
+            uniqueReturn = ret;
+        }
+
+        if (uniqueReturn == nullptr)
+            continue;
+
+        llvm::IRBuilder<> builder(uniqueReturn);
+        variable.exitQueryValue = builder.CreateLoad(
+            variable.storedType,
+            const_cast<Value*>(variable.storage),
+            "__svf_exit_" + variable.name);
+    }
+
+    for (PointerVariable& variable : variables)
+    {
+        if (variable.exitQueryValue != nullptr)
+        {
+            variable.finalValue = variable.exitQueryValue;
+        }
+    }
+
+    return variables;
 }
 
-ContextCond buildQueryContext(ContextDDA* pta, const Value* value)
-{
-    ContextCond context;
-
-    const auto* call = dyn_cast<CallBase>(value);
-    if (call == nullptr || LLVMUtil::isIntrinsicInst(call))
-        return context;
-
-    const Function* calleeFun = call->getCalledFunction();
-    if (calleeFun == nullptr)
-        return context;
-
-    LLVMModuleSet* llvmModuleSet = LLVMModuleSet::getLLVMModuleSet();
-    const CallICFGNode* callNode = llvmModuleSet->getCallICFGNode(call);
-    const FunObjVar* callee = llvmModuleSet->getFunObjVar(calleeFun);
-    const CallGraph* callGraph = pta->getCallGraph();
-
-    if (callGraph->hasCallSiteID(callNode, callee))
-        context.getContexts().push_back(callGraph->getCallSiteID(callNode, callee));
-
-    return context;
-}
-
-std::string renderPointsToSet(SVFIR* pag, const CxtPtSet& pts)
+std::string renderPointsToSet(SVFIR* pag, const PointsTo& pts)
 {
     if (pts.empty())
         return "(empty)";
 
     std::set<std::string> renderedTargets;
-    for (const CxtVar& obj : pts)
-        renderedTargets.insert(renderObjectName(pag->getSVFVar(obj.get_id())));
+    for (NodeID objId : pts)
+        renderedTargets.insert(renderObjectName(pag->getSVFVar(objId)));
 
     std::ostringstream oss;
     bool first = true;
@@ -369,6 +447,26 @@ std::string renderPointsToSet(SVFIR* pag, const CxtPtSet& pts)
     return oss.str();
 }
 
+const Value* resolveQueryValue(
+    const Value* value,
+    const std::map<std::string, const Value*>& finalValueByStorageName,
+    std::set<std::string>& visitedStorages)
+{
+    const auto* load = dyn_cast_or_null<LoadInst>(value);
+    if (load == nullptr)
+        return value;
+
+    const std::string storageName = renderStorageName(load->getPointerOperand());
+    if (!visitedStorages.insert(storageName).second)
+        return value;
+
+    auto found = finalValueByStorageName.find(storageName);
+    if (found == finalValueByStorageName.end() || found->second == nullptr)
+        return value;
+
+    return resolveQueryValue(found->second, finalValueByStorageName, visitedStorages);
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -376,14 +474,12 @@ int main(int argc, char** argv)
     if (argc < 2)
     {
         errs() << "Usage: " << argv[0] << " <input.bc> [additional SVF options]\n";
-        errs() << "Runs flow- and context-sensitive DDA and prints: Pointer<TAB>Pointees.\n";
+        errs() << "Runs flow-insensitive Andersen analysis and prints: Pointer<TAB>Pointees.\n";
         return 1;
     }
 
     std::vector<std::string> args = {
         argv[0],
-        "-query=all",
-        "-cxt",
         "-stat=false",
         "-print-query-pts=false",
         "-print-all-pts=false"
@@ -405,12 +501,12 @@ int main(int argc, char** argv)
     std::vector<std::string> moduleNameVec = OptionBase::parseOptions(
         static_cast<int>(optionArgv.size()),
         optionArgv.data(),
-        "Flow- and Context-Sensitive Points-to Dumper",
+        "Flow-Insensitive Points-to Dumper",
         "[options] <input-bitcode...>");
 
     if (moduleNameVec.size() != 1)
     {
-        errs() << "cxt-pts currently expects exactly one input bitcode file.\n";
+        errs() << "fi-pts currently expects exactly one input bitcode file.\n";
         return 1;
     }
 
@@ -423,27 +519,60 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    std::vector<PointerVariable> variables = collectPointerVariables(*module);
     LLVMModuleSet::buildSVFModule(*module);
 
     SVFIRBuilder builder;
     SVFIR* pag = builder.build();
 
-    auto client = std::make_unique<DDAClient>();
-    std::unique_ptr<ContextDDA> pta = std::make_unique<ContextDDA>(pag, client.get());
+    Andersen* pta = AndersenWaveDiff::createAndersenWaveDiff(pag);
+    LLVMModuleSet* llvmModuleSet = LLVMModuleSet::getLLVMModuleSet();
 
-    pta->initialize();
-    std::vector<PointerQuery> queries = collectPointerQueries(*module, pta.get(), pag);
+    std::vector<PointerQuery> queries;
+    std::map<std::string, const Value*> finalValueByStorageName;
+    for (const PointerVariable& variable : variables)
+        finalValueByStorageName[renderStorageName(variable.storage)] = variable.finalValue;
 
-    outs() << "Location\tPointer\tPointees\n";
-    for (const PointerQuery& query : queries)
+    for (const PointerVariable& variable : variables)
     {
-        const CxtPtSet& pts = pta->computeDDAPts(CxtVar(query.context, query.rhsNodeId));
-        outs() << query.location << '\t' << query.name << '\t' << renderPointsToSet(pag, pts) << '\n';
+        if (variable.finalValue == nullptr)
+            continue;
+
+        std::set<std::string> visitedStorages;
+        const Value* queryValue = resolveQueryValue(variable.finalValue, finalValueByStorageName, visitedStorages);
+        NodeID rhsNodeId = 0;
+
+        if (const auto* call = dyn_cast<CallBase>(queryValue))
+        {
+            if (const Function* calleeFun = call->getCalledFunction())
+                rhsNodeId = llvmModuleSet->getReturnNode(calleeFun);
+        }
+
+        if (rhsNodeId == 0)
+        {
+            if (!llvmModuleSet->hasValueNode(queryValue))
+                continue;
+            rhsNodeId = llvmModuleSet->getValueNode(queryValue);
+        }
+
+        const SVFVar* rhsNode = pag->getSVFVar(rhsNodeId);
+        if (rhsNode == nullptr || !pag->isValidTopLevelPtr(rhsNode))
+            continue;
+
+        PointerQuery query;
+        query.name = variable.name;
+        query.rhsNodeId = rhsNodeId;
+        queries.push_back(std::move(query));
     }
 
-    pta.reset();
-    client.reset();
+    outs() << "Pointer\tPointees\n";
+    for (const PointerQuery& query : queries)
+    {
+        const PointsTo& pts = pta->getPts(query.rhsNodeId);
+        outs() << query.name << '\t' << renderPointsToSet(pag, pts) << '\n';
+    }
 
+    AndersenWaveDiff::releaseAndersenWaveDiff();
     SVFIR::releaseSVFIR();
     LLVMModuleSet::releaseLLVMModuleSet();
     llvm_shutdown();

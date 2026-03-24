@@ -13,6 +13,7 @@ set(ALL_TOOLS
     cfl
     dvf
     cxt-pts
+    fi-pts
     llvm2svf
     mta
     saber
