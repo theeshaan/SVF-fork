@@ -269,7 +269,17 @@ struct PointerQuery
     std::string name;
     const Value* queryValue = nullptr;
     NodeID rhsNodeId = 0;
+    bool emitOnlyOnChange = false;
 };
+
+
+std::string renderNamedPointerVariable(const Value* storage, const Function& function)
+{
+    std::string name = renderStorageName(storage);
+    if (!isGlobalStorage(storage))
+        name += "_" + function.getName().str();
+    return name;
+}
 
 std::vector<PointerQuery> collectPointerQueries(Module& module)
 {
@@ -291,11 +301,20 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
             query.lineNumber = store->getDebugLoc() ? store->getDebugLoc().getLine() : syntheticLine;
             if (query.lineNumber == 0)
                 query.lineNumber = syntheticLine;
-            query.name = renderStorageName(store->getPointerOperand());
-            if (!isGlobalStorage(store->getPointerOperand()))
-                query.name += "_" + function.getName().str();
+            query.name = renderNamedPointerVariable(store->getPointerOperand(), function);
             query.queryValue = store->getValueOperand()->stripPointerCasts();
             queries.push_back(std::move(query));
+
+            if (const auto* load = dyn_cast<LoadInst>(store->getValueOperand()->stripPointerCasts()))
+            {
+                PointerQuery readQuery;
+                readQuery.lineNumber = query.lineNumber;
+                readQuery.name = renderNamedPointerVariable(load->getPointerOperand(), function);
+                readQuery.queryValue = load;
+                readQuery.emitOnlyOnChange = true;
+                queries.push_back(std::move(readQuery));
+            }
+
             ++syntheticLine;
         }
     }
@@ -418,13 +437,24 @@ int main(int argc, char** argv)
     DDAClient queryDriver;
     queryDriver.answerQueries(pta.get());
 
+    std::map<std::string, std::string> lastPtsByPointer;
     for (const PointerQuery& query : queries)
     {
         if (query.rhsNodeId == 0)
             continue;
 
         const PointsTo& pts = pta->getPts(query.rhsNodeId);
-        outs() << query.lineNumber << ' ' << query.name << ' ' << renderPointsToSet(pag, pts) << '\n';
+        const std::string ptsRendered = renderPointsToSet(pag, pts);
+
+        if (query.emitOnlyOnChange)
+        {
+            auto found = lastPtsByPointer.find(query.name);
+            if (found != lastPtsByPointer.end() && found->second == ptsRendered)
+                continue;
+        }
+
+        outs() << query.lineNumber << ' ' << query.name << ' ' << ptsRendered << '\n';
+        lastPtsByPointer[query.name] = ptsRendered;
     }
 
     pta.reset();

@@ -102,7 +102,8 @@ run_case cxt_merge_paths \
   "9 pB_main b_main" \
   "10 pC_main c_main" \
   "13 pA_main b_main c_main" \
-  "15 pD_main a_main b_main c_main"
+  "15 pD_main a_main b_main c_main" \
+  "15 pA_main a_main b_main c_main"
 
 run_case_regex cxt_crash_regression \
   "^25 b_main call[0-9]+_main$" \
