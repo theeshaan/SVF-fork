@@ -68,7 +68,7 @@ run_case simple_assign \
   "7 q_main a_main"
 
 run_case call_context \
-  "1 s_foo a_main b_main" \
+  "2 s_foo a_main b_main" \
   "16 pa_main a_main b_main" \
   "17 pb_main a_main b_main"
 
@@ -108,5 +108,11 @@ run_case cxt_merge_paths \
 run_case_regex cxt_crash_regression \
   "^25 b_main call[0-9]+_main$" \
   "^26 c_main (call[0-9]+_main|\(empty\))$"
+
+run_case cxt_line_usage \
+  "4 p_main a_main" \
+  "6 p_main b_main" \
+  "8 p_main c_main" \
+  "9 p_main b_main c_main"
 
 echo "All cxt-pts tests passed."

@@ -293,26 +293,29 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
         u32_t syntheticLine = 1;
         for (Instruction& inst : instructions(function))
         {
+            const u32_t lineNumber = inst.getDebugLoc() ? inst.getDebugLoc().getLine() : syntheticLine;
+
             const auto* store = dyn_cast<StoreInst>(&inst);
-            if (store == nullptr || !store->getValueOperand()->getType()->isPointerTy())
-                continue;
-
-            PointerQuery query;
-            query.lineNumber = store->getDebugLoc() ? store->getDebugLoc().getLine() : syntheticLine;
-            if (query.lineNumber == 0)
-                query.lineNumber = syntheticLine;
-            query.name = renderNamedPointerVariable(store->getPointerOperand(), function);
-            query.queryValue = store->getValueOperand()->stripPointerCasts();
-            queries.push_back(std::move(query));
-
-            if (const auto* load = dyn_cast<LoadInst>(store->getValueOperand()->stripPointerCasts()))
+            if (store != nullptr && store->getValueOperand()->getType()->isPointerTy())
             {
-                PointerQuery readQuery;
-                readQuery.lineNumber = query.lineNumber;
-                readQuery.name = renderNamedPointerVariable(load->getPointerOperand(), function);
-                readQuery.queryValue = load;
-                readQuery.emitOnlyOnChange = true;
-                queries.push_back(std::move(readQuery));
+                PointerQuery query;
+                query.lineNumber = lineNumber == 0 ? syntheticLine : lineNumber;
+                query.name = renderNamedPointerVariable(store->getPointerOperand(), function);
+                query.queryValue = store->getValueOperand()->stripPointerCasts();
+                queries.push_back(std::move(query));
+            }
+
+            if (const auto* load = dyn_cast<LoadInst>(&inst))
+            {
+                if (load->getType()->isPointerTy())
+                {
+                    PointerQuery readQuery;
+                    readQuery.lineNumber = lineNumber == 0 ? syntheticLine : lineNumber;
+                    readQuery.name = renderNamedPointerVariable(load->getPointerOperand(), function);
+                    readQuery.queryValue = load;
+                    readQuery.emitOnlyOnChange = true;
+                    queries.push_back(std::move(readQuery));
+                }
             }
 
             ++syntheticLine;
