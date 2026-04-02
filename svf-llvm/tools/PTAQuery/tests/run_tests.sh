@@ -68,7 +68,7 @@ run_case simple_assign \
   "7 q_main a_main"
 
 run_case call_context \
-  "0 s_foo a_main b_main" \
+  "1 s_foo a_main b_main" \
   "16 pa_main a_main b_main" \
   "17 pb_main a_main b_main"
 

@@ -320,6 +320,7 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
         if (function.isDeclaration())
             continue;
 
+        u32_t syntheticLine = 1;
         for (Instruction& inst : instructions(function))
         {
             const auto* store = dyn_cast<StoreInst>(&inst);
@@ -327,12 +328,15 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
                 continue;
 
             PointerQuery query;
-            query.lineNumber = store->getDebugLoc() ? store->getDebugLoc().getLine() : 0;
+            query.lineNumber = store->getDebugLoc() ? store->getDebugLoc().getLine() : syntheticLine;
+            if (query.lineNumber == 0)
+                query.lineNumber = syntheticLine;
             query.name = renderStorageName(store->getPointerOperand());
             if (!isGlobalStorage(store->getPointerOperand()))
                 query.name += "_" + function.getName().str();
             query.queryValue = store->getValueOperand()->stripPointerCasts();
             queries.push_back(std::move(query));
+            ++syntheticLine;
         }
     }
 
