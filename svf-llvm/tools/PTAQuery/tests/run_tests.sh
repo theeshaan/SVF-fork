@@ -68,7 +68,7 @@ run_case simple_assign \
   "7 q_main a_main"
 
 run_case call_context \
-  "0 s_foo a_main b_main" \
+  "9 s_foo a_main b_main" \
   "16 pa_main a_main" \
   "17 pb_main b_main"
 
@@ -109,7 +109,7 @@ run_case cxt_merge_paths \
 
 run_case_regex cxt_crash_regression \
   "^25 b_main call[0-9]+_main$" \
-  "^26 c_main (call[0-9]+_main|\(empty\))$"
+  "^26 c_main( call[0-9]+_main)? ?$"
 
 run_case cxt_line_usage \
   "4 p_main a_main" \

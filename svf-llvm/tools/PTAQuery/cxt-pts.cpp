@@ -411,7 +411,7 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
 std::string renderPointsToSet(SVFIR* pag, const PointsTo& pts)
 {
     if (pts.empty())
-        return "(empty)";
+        return "";
 
     std::set<std::string> renderedTargets;
     for (NodeID objId : pts)
@@ -524,21 +524,28 @@ int main(int argc, char** argv)
     }
 
     bool hasAnyNonZeroLine = false;
+    bool hasAnyQueryablePointerStmt = false;
     for (const PointerQuery& query : queries)
     {
-        if (query.rhsNodeId != 0 && query.lineNumber != 0)
+        if (query.rhsNodeId != 0)
         {
-            hasAnyNonZeroLine = true;
-            break;
+            hasAnyQueryablePointerStmt = true;
+            if (query.lineNumber != 0)
+            {
+                hasAnyNonZeroLine = true;
+                break;
+            }
         }
     }
-    if (!hasAnyNonZeroLine)
+    if (hasAnyQueryablePointerStmt && !hasAnyNonZeroLine)
         outs() << "WARNING: line numbers are 0; compile with -g to preserve debug line info.\n";
 
     std::map<std::string, std::string> lastPtsByPointer;
     for (const PointerQuery& query : queries)
     {
         if (query.rhsNodeId == 0)
+            continue;
+        if (query.lineNumber == 0)
             continue;
 
         std::string ptsRendered;
@@ -551,7 +558,7 @@ int main(int argc, char** argv)
 
             if (renderedTargets.empty())
             {
-                ptsRendered = "(empty)";
+                ptsRendered = "";
             }
             else
             {
