@@ -1,24 +1,3 @@
-//===- cxt-pts.cpp -- Context-sensitive points-to dumper -----------------===//
-//
-//                     SVF: Static Value-Flow Analysis
-//
-// Copyright (C) <2013-2022>  <Yulei Sui>
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-//===----------------------------------------------------------------------===//
-
 #include "DDA/ContextDDA.h"
 #include "DDA/DDAClient.h"
 #include "SVF-LLVM/LLVMModule.h"
@@ -274,9 +253,60 @@ bool isSimplePointerOperand(const Value* value)
     return false;
 }
 
+bool isSimpleCallReturnValue(const Value* value)
+{
+    if (value == nullptr)
+        return false;
+
+    const Value* stripped = value->stripPointerCasts();
+    if (isa<Argument>(stripped) || isa<AllocaInst>(stripped) || isa<GlobalVariable>(stripped) || isa<CallBase>(stripped) || isa<PHINode>(stripped) || isa<SelectInst>(stripped))
+        return true;
+
+    if (const auto* load = dyn_cast<LoadInst>(stripped))
+    {
+        const Value* loadPtr = load->getPointerOperand()->stripPointerCasts();
+        if (isa<AllocaInst>(loadPtr) || isa<GlobalVariable>(loadPtr))
+            return true;
+    }
+
+    return false;
+}
+
+bool hasSafeCalleeReturnShape(const Function* calleeFun)
+{
+    if (calleeFun == nullptr || calleeFun->isDeclaration())
+        return false;
+
+    bool sawReturn = false;
+    for (const BasicBlock& block : *calleeFun)
+    {
+        const auto* ret = dyn_cast<ReturnInst>(block.getTerminator());
+        if (ret == nullptr)
+            continue;
+
+        sawReturn = true;
+        const Value* retVal = ret->getReturnValue();
+        if (retVal == nullptr)
+            return false;
+
+        if (!isSimpleCallReturnValue(retVal))
+            return false;
+    }
+
+    return sawReturn;
+}
+
 bool isSafeForContextQuery(const Value* value)
 {
-    return value != nullptr && isa<CallBase>(value);
+    const auto* call = dyn_cast_or_null<CallBase>(value);
+    if (call == nullptr || LLVMUtil::isIntrinsicInst(call))
+        return false;
+
+    const Function* calleeFun = call->getCalledFunction();
+    if (calleeFun == nullptr)
+        return false;
+
+    return hasSafeCalleeReturnShape(calleeFun);
 }
 
 bool isGlobalStorage(const Value* value)
@@ -345,16 +375,15 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
         if (function.isDeclaration())
             continue;
 
-        u32_t syntheticLine = 1;
         for (Instruction& inst : instructions(function))
         {
-            const u32_t lineNumber = inst.getDebugLoc() ? inst.getDebugLoc().getLine() : syntheticLine;
+            const u32_t lineNumber = inst.getDebugLoc() ? inst.getDebugLoc().getLine() : 0;
 
             const auto* store = dyn_cast<StoreInst>(&inst);
             if (store != nullptr && store->getValueOperand()->getType()->isPointerTy())
             {
                 PointerQuery query;
-                query.lineNumber = lineNumber == 0 ? syntheticLine : lineNumber;
+                query.lineNumber = lineNumber;
                 query.name = renderNamedPointerVariable(store->getPointerOperand(), function);
                 query.queryValue = store->getValueOperand()->stripPointerCasts();
                 queries.push_back(std::move(query));
@@ -365,7 +394,7 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
                 if (load->getType()->isPointerTy())
                 {
                     PointerQuery readQuery;
-                    readQuery.lineNumber = lineNumber == 0 ? syntheticLine : lineNumber;
+                    readQuery.lineNumber = lineNumber;
                     readQuery.name = renderNamedPointerVariable(load->getPointerOperand(), function);
                     readQuery.queryValue = load;
                     readQuery.emitOnlyOnChange = true;
@@ -373,7 +402,6 @@ std::vector<PointerQuery> collectPointerQueries(Module& module)
                 }
             }
 
-            ++syntheticLine;
         }
     }
 
@@ -494,6 +522,18 @@ int main(int argc, char** argv)
         query.rhsNodeId = rhsNodeId;
         query.context = buildQueryContext(pta.get(), query.queryValue);
     }
+
+    bool hasAnyNonZeroLine = false;
+    for (const PointerQuery& query : queries)
+    {
+        if (query.rhsNodeId != 0 && query.lineNumber != 0)
+        {
+            hasAnyNonZeroLine = true;
+            break;
+        }
+    }
+    if (!hasAnyNonZeroLine)
+        outs() << "WARNING: line numbers are 0; compile with -g to preserve debug line info.\n";
 
     std::map<std::string, std::string> lastPtsByPointer;
     for (const PointerQuery& query : queries)

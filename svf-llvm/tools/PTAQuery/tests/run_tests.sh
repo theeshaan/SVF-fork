@@ -68,7 +68,7 @@ run_case simple_assign \
   "7 q_main a_main"
 
 run_case call_context \
-  "2 s_foo a_main b_main" \
+  "0 s_foo a_main b_main" \
   "16 pa_main a_main" \
   "17 pb_main b_main"
 
@@ -117,5 +117,9 @@ run_case cxt_line_usage \
   "6 p_main b_main" \
   "8 p_main c_main" \
   "9 p_main a_main b_main c_main"
+
+run_case_regex cxt_heap_gep_call_return \
+  "^15 head_main call[0-9]*_main$" \
+  "^16 p_main call[0-9]*_main$"
 
 echo "All cxt-pts tests passed."
