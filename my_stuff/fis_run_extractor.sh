@@ -11,15 +11,15 @@ LLVM_PATH=""
 
 function run_base(){
     filepath="$1"
-    "$LLVM_PATH/opt" -passes='early-cse' $filepath.bc -o $filepath.opt.bc
+    # "$LLVM_PATH/opt" -passes='early-cse' $filepath.bc -o $filepath.opt.bc
     # echo "Processing $file with DVF"
     # "$SVF_PATH/dvf" -query=all -cpts -cxt -print-all-pts -dump-callgraph -max-cxt=3 -flow-bg=10000 -cxt-bg=10000 -stat=false $filepath.opt.bc > $filepath.pta
     echo "Processing $file with WPA flags: $SVF_PTA_FLAG"
-    "$SVF_PATH/wpa" $SVF_PTA_FLAG -stat=false -print-all-pts -dump-callgraph $filepath.opt.bc > $filepath.pta;
+    "$SVF_PATH/wpa" $SVF_PTA_FLAG -stat=false -print-all-pts -dump-callgraph $filepath.bc > $filepath.pta;
     python3 fis_extractor.py $filepath;
-    rm $filepath.pta;
+    # rm $filepath.pta;
     rm $filepath.bc
-    rm $filepath.opt.bc
+    # rm $filepath.opt.bc
     rm callgraph_initial.dot
     rm callgraph_final.dot
 }

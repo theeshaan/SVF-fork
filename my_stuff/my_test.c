@@ -1,19 +1,10 @@
-struct FunctionPointer{
-    int (*fp)(int);
-};
+#include <stdio.h>
+int main()
+{
+    int a = 10;
+    int b = 20;
 
-int f(int k){
-    return k;
-}
-
-int g(int k){
-    return k+1;
-}
-
-int main(){
-    struct FunctionPointer fp;
-    fp.fp = &f;
-    fp.fp(1);
-    fp.fp = &g;
-    fp.fp(1);
+    int *pA = &a;
+    int *pB = &b;
+    pA = pB;
 }

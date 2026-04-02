@@ -231,9 +231,6 @@ std::string renderStorageName(const Value* value)
     return renderValueName(value);
 }
 
-
-
-
 bool isSimplePointerOperand(const Value* value)
 {
     if (value == nullptr)
