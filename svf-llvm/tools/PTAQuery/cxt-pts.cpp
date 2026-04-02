@@ -20,6 +20,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#ifdef __unix__
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 using namespace SVF;
 using namespace llvm;
@@ -429,6 +435,109 @@ std::string renderPointsToSet(SVFIR* pag, const PointsTo& pts)
     return oss.str();
 }
 
+bool tryComputeContextPtsIsolated(
+    ContextDDA* pta,
+    SVFIR* pag,
+    const ContextCond& context,
+    NodeID rhsNodeId,
+    std::string& ptsRendered)
+{
+#ifdef __unix__
+    int pipefd[2];
+    if (pipe(pipefd) != 0)
+        return false;
+
+    const pid_t pid = fork();
+    if (pid < 0)
+    {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return false;
+    }
+
+    if (pid == 0)
+    {
+        close(pipefd[0]);
+        int devnull = open("/dev/null", O_WRONLY);
+        if (devnull >= 0)
+        {
+            dup2(devnull, STDERR_FILENO);
+            close(devnull);
+        }
+
+        std::ostringstream oss;
+        const CxtPtSet& pts = pta->computeDDAPts(CxtVar(context, rhsNodeId));
+        for (const CxtVar& obj : pts)
+            oss << obj.get_id() << '\n';
+
+        const std::string payload = oss.str();
+        const char* data = payload.data();
+        std::size_t remaining = payload.size();
+        while (remaining > 0)
+        {
+            const ssize_t written = write(pipefd[1], data, remaining);
+            if (written <= 0)
+                break;
+            data += written;
+            remaining -= static_cast<std::size_t>(written);
+        }
+        close(pipefd[1]);
+        _exit(0);
+    }
+
+    close(pipefd[1]);
+    std::string payload;
+    char buffer[4096];
+    ssize_t n = 0;
+    while ((n = read(pipefd[0], buffer, sizeof(buffer))) > 0)
+        payload.append(buffer, static_cast<std::size_t>(n));
+    close(pipefd[0]);
+
+    int status = 0;
+    if (waitpid(pid, &status, 0) < 0)
+        return false;
+
+    if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0))
+        return false;
+
+    std::set<std::string> renderedTargets;
+    std::istringstream iss(payload);
+    std::string line;
+    while (std::getline(iss, line))
+    {
+        if (line.empty())
+            continue;
+        const NodeID objId = static_cast<NodeID>(std::stoul(line));
+        renderedTargets.insert(renderObjectName(pag->getSVFVar(objId)));
+    }
+
+    if (renderedTargets.empty())
+    {
+        ptsRendered = "";
+        return true;
+    }
+
+    std::ostringstream oss;
+    bool first = true;
+    for (const std::string& target : renderedTargets)
+    {
+        if (!first)
+            oss << ' ';
+        first = false;
+        oss << target;
+    }
+    ptsRendered = oss.str();
+    return true;
+#else
+    (void)pta;
+    (void)pag;
+    (void)context;
+    (void)rhsNodeId;
+    (void)ptsRendered;
+    return false;
+#endif
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -551,27 +660,10 @@ int main(int argc, char** argv)
         std::string ptsRendered;
         if (isSafeForContextQuery(query.queryValue))
         {
-            const CxtPtSet& pts = pta->computeDDAPts(CxtVar(query.context, query.rhsNodeId));
-            std::set<std::string> renderedTargets;
-            for (const CxtVar& obj : pts)
-                renderedTargets.insert(renderObjectName(pag->getSVFVar(obj.get_id())));
-
-            if (renderedTargets.empty())
+            if (!tryComputeContextPtsIsolated(pta.get(), pag, query.context, query.rhsNodeId, ptsRendered))
             {
-                ptsRendered = "";
-            }
-            else
-            {
-                std::ostringstream oss;
-                bool first = true;
-                for (const std::string& target : renderedTargets)
-                {
-                    if (!first)
-                        oss << ' ';
-                    first = false;
-                    oss << target;
-                }
-                ptsRendered = oss.str();
+                const PointsTo& pts = ander->getPts(query.rhsNodeId);
+                ptsRendered = renderPointsToSet(pag, pts);
             }
         }
         else
