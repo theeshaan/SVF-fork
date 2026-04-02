@@ -55,4 +55,12 @@ run_case function_pointer_struct \
 run_case branchy_if_chain \
   $'p_main\ta_main, b_main, c_main, d_main, e_main, f_main'
 
+run_case fi_global_struct_case \
+  $'net.arcs\tcall1_read_min, call_resize_prob' \
+  $'net.stop_arcs\tcall1_read_min.offset0, call_resize_prob.offset0' \
+  $'arc.nextout_refresh_neighbour_lists\tcall1_read_min, call_resize_prob' \
+  $'arc.nextin_refresh_neighbour_lists\tcall1_read_min, call_resize_prob' \
+  $'arc.tail.firstout_refresh_neighbour_lists\tcall1_read_min, call_resize_prob' \
+  $'arc.head.firstin_refresh_neighbour_lists\tcall1_read_min, call_resize_prob'
+
 echo "All fi-pts tests passed."

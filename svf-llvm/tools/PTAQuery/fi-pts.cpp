@@ -46,6 +46,8 @@ using namespace llvm;
 namespace
 {
 
+std::string renderStorageName(const Value* value);
+
 std::string findExtAPIPath()
 {
     if (const char* svfPath = std::getenv("SVF_PATH"))
@@ -133,6 +135,24 @@ const llvm::DIVariable* getDebugVariableForAlloca(const AllocaInst* allocaInst)
     return nullptr;
 }
 
+const llvm::DIGlobalVariable* getDebugVariableForGlobal(const GlobalVariable* globalVar)
+{
+    if (globalVar == nullptr)
+        return nullptr;
+
+    SmallVector<DIGlobalVariableExpression*, 4> globalExprs;
+    globalVar->getDebugInfo(globalExprs);
+    for (const auto* expr : globalExprs)
+    {
+        if (expr == nullptr)
+            continue;
+        if (const auto* var = expr->getVariable())
+            return var;
+    }
+
+    return nullptr;
+}
+
 const llvm::DIType* unwrapDebugType(const llvm::DIType* type)
 {
     const llvm::DIType* current = type;
@@ -145,14 +165,26 @@ const llvm::DIType* unwrapDebugType(const llvm::DIType* type)
     return current;
 }
 
-std::string getStructFieldName(const AllocaInst* allocaInst, const GEPOperator* gep)
+const llvm::DICompositeType* getDebugCompositeTypeForValue(const Value* value)
 {
-    const llvm::DIVariable* divar = getDebugVariableForAlloca(allocaInst);
-    if (divar == nullptr)
-        return "";
+    if (const auto* allocaInst = dyn_cast_or_null<AllocaInst>(value))
+    {
+        if (const llvm::DIVariable* divar = getDebugVariableForAlloca(allocaInst))
+            return dyn_cast_or_null<DICompositeType>(unwrapDebugType(divar->getType()));
+    }
 
-    const llvm::DIType* type = unwrapDebugType(divar->getType());
-    const auto* composite = dyn_cast_or_null<DICompositeType>(type);
+    if (const auto* globalVar = dyn_cast_or_null<GlobalVariable>(value))
+    {
+        if (const llvm::DIGlobalVariable* divar = getDebugVariableForGlobal(globalVar))
+            return dyn_cast_or_null<DICompositeType>(unwrapDebugType(divar->getType()));
+    }
+
+    return nullptr;
+}
+
+std::string getStructFieldName(const Value* baseValue, const GEPOperator* gep)
+{
+    const auto* composite = getDebugCompositeTypeForValue(baseValue);
     if (composite == nullptr)
         return "";
 
@@ -182,6 +214,31 @@ std::string getStructFieldName(const AllocaInst* allocaInst, const GEPOperator* 
     return member->getName().str();
 }
 
+std::string renderPointerBaseName(const Value* value)
+{
+    if (value == nullptr)
+        return "(unknown)";
+
+    if (const auto* load = dyn_cast<LoadInst>(value))
+        return renderStorageName(load->getPointerOperand());
+
+    return renderStorageName(value);
+}
+
+bool isGlobalStorage(const Value* value)
+{
+    if (value == nullptr)
+        return false;
+
+    if (isa<GlobalVariable>(value))
+        return true;
+
+    if (const auto* gep = dyn_cast<GEPOperator>(value))
+        return isGlobalStorage(gep->getPointerOperand()->stripPointerCasts());
+
+    return false;
+}
+
 std::string renderObjectName(const SVFVar* obj)
 {
     if (obj == nullptr)
@@ -199,6 +256,38 @@ std::string renderObjectName(const SVFVar* obj)
         return name;
     }
 
+    LLVMModuleSet* llvmModuleSet = LLVMModuleSet::getLLVMModuleSet();
+    if (llvmModuleSet->hasLLVMValue(obj))
+    {
+        const Value* llvmValue = llvmModuleSet->getLLVMValue(obj);
+        std::string llvmName = renderValueName(llvmValue);
+        if (const FunObjVar* fun = obj->getFunction())
+            return llvmName + "_" + fun->getName();
+        return llvmName;
+    }
+
+    if (const auto* gepObj = SVFUtil::dyn_cast<GepObjVar>(obj))
+    {
+        std::ostringstream oss;
+        oss << renderObjectName(gepObj->getBaseObj()) << ".offset" << gepObj->getConstantFieldIdx();
+        return oss.str();
+    }
+
+    if (const auto* baseObj = SVFUtil::dyn_cast<BaseObjVar>(obj))
+    {
+        if (const ICFGNode* icfgNode = baseObj->getICFGNode())
+        {
+            if (llvmModuleSet->hasLLVMValue(icfgNode))
+            {
+                const Value* llvmValue = llvmModuleSet->getLLVMValue(icfgNode);
+                std::string llvmName = renderValueName(llvmValue);
+                if (const FunObjVar* fun = obj->getFunction())
+                    return llvmName + "_" + fun->getName();
+                return llvmName;
+            }
+        }
+    }
+
     return renderSVFVar(obj);
 }
 
@@ -210,18 +299,30 @@ std::string renderStorageName(const Value* value)
     if (isa<AllocaInst>(value) || isa<GlobalVariable>(value))
         return renderValueName(value);
 
+    if (const auto* load = dyn_cast<LoadInst>(value))
+        return renderStorageName(load->getPointerOperand());
+
     if (const auto* gep = dyn_cast<GEPOperator>(value))
     {
         std::ostringstream oss;
         const Value* basePointer = gep->getPointerOperand()->stripPointerCasts();
-        oss << renderStorageName(basePointer);
+        oss << renderPointerBaseName(basePointer);
 
-        if (const auto* allocaInst = dyn_cast<AllocaInst>(basePointer))
+        std::string fieldName = getStructFieldName(basePointer, gep);
+        if (!fieldName.empty())
         {
-            std::string fieldName = getStructFieldName(allocaInst, gep);
-            if (!fieldName.empty())
+            oss << "." << fieldName;
+            return oss.str();
+        }
+
+        std::string gepName = gep->getName().str();
+        if (!gepName.empty())
+        {
+            while (!gepName.empty() && std::isdigit(static_cast<unsigned char>(gepName.back())))
+                gepName.pop_back();
+            if (!gepName.empty())
             {
-                oss << "." << fieldName;
+                oss << "." << gepName;
                 return oss.str();
             }
         }
@@ -283,7 +384,7 @@ std::vector<PointerVariable> collectPointerVariables(Module& module)
             {
                 PointerVariable variable;
                 variable.name = renderStorageName(storage);
-                if (!isa<GlobalVariable>(storage))
+                if (!isGlobalStorage(storage))
                     variable.name += "_" + function.getName().str();
                 variable.storage = storage;
                 variable.function = &function;
