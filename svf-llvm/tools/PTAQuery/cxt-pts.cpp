@@ -19,12 +19,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "DDA/FlowDDA.h"
+#include "DDA/ContextDDA.h"
 #include "DDA/DDAClient.h"
 #include "SVF-LLVM/LLVMModule.h"
 #include "SVF-LLVM/LLVMUtil.h"
 #include "SVF-LLVM/SVFIRBuilder.h"
 #include "Util/Options.h"
+#include "WPA/Andersen.h"
 
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/IR/IRBuilder.h>
@@ -248,6 +249,36 @@ std::string renderStorageName(const Value* value)
 
 
 
+bool isSimplePointerOperand(const Value* value)
+{
+    if (value == nullptr)
+        return false;
+
+    const Value* stripped = value->stripPointerCasts();
+    if (isa<AllocaInst>(stripped) || isa<GlobalVariable>(stripped))
+        return true;
+
+    if (const auto* gep = dyn_cast<GEPOperator>(stripped))
+    {
+        if (!isSimplePointerOperand(gep->getPointerOperand()))
+            return false;
+
+        for (auto indexIt = gep->idx_begin(), indexEnd = gep->idx_end(); indexIt != indexEnd; ++indexIt)
+        {
+            if (!isa<ConstantInt>(indexIt->get()))
+                return false;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool isSafeForContextQuery(const Value* value)
+{
+    return value != nullptr && isa<CallBase>(value);
+}
+
 bool isGlobalStorage(const Value* value)
 {
     if (value == nullptr)
@@ -353,13 +384,14 @@ int main(int argc, char** argv)
     if (argc < 2)
     {
         errs() << "Usage: " << argv[0] << " <input.bc> [additional SVF options]\n";
-        errs() << "Runs flow-sensitive DDA query solving and prints: line ptr pointee...\n";
+        errs() << "Runs flow- and context-sensitive DDA query solving and prints: line ptr pointee...\n";
         return 1;
     }
 
     std::vector<std::string> args = {
         argv[0],
         "-query=all",
+        "-cxt",
         "-stat=false",
         "-print-query-pts=false",
         "-print-all-pts=false"
@@ -406,7 +438,8 @@ int main(int argc, char** argv)
     SVFIR* pag = builder.build();
 
     auto client = std::make_unique<DDAClient>();
-    std::unique_ptr<FlowDDA> pta = std::make_unique<FlowDDA>(pag, client.get());
+    std::unique_ptr<ContextDDA> pta = std::make_unique<ContextDDA>(pag, client.get());
+    Andersen* ander = AndersenWaveDiff::createAndersenWaveDiff(pag);
     LLVMModuleSet* llvmModuleSet = LLVMModuleSet::getLLVMModuleSet();
 
     pta->initialize();
@@ -437,17 +470,43 @@ int main(int argc, char** argv)
         query.rhsNodeId = rhsNodeId;
     }
 
-    DDAClient queryDriver;
-    queryDriver.answerQueries(pta.get());
-
     std::map<std::string, std::string> lastPtsByPointer;
     for (const PointerQuery& query : queries)
     {
         if (query.rhsNodeId == 0)
             continue;
 
-        const PointsTo& pts = pta->getPts(query.rhsNodeId);
-        const std::string ptsRendered = renderPointsToSet(pag, pts);
+        std::string ptsRendered;
+        if (isSafeForContextQuery(query.queryValue))
+        {
+            const CxtPtSet& pts = pta->computeDDAPts(CxtVar(ContextCond(), query.rhsNodeId));
+            std::set<std::string> renderedTargets;
+            for (const CxtVar& obj : pts)
+                renderedTargets.insert(renderObjectName(pag->getSVFVar(obj.get_id())));
+
+            if (renderedTargets.empty())
+            {
+                ptsRendered = "(empty)";
+            }
+            else
+            {
+                std::ostringstream oss;
+                bool first = true;
+                for (const std::string& target : renderedTargets)
+                {
+                    if (!first)
+                        oss << ' ';
+                    first = false;
+                    oss << target;
+                }
+                ptsRendered = oss.str();
+            }
+        }
+        else
+        {
+            const PointsTo& pts = ander->getPts(query.rhsNodeId);
+            ptsRendered = renderPointsToSet(pag, pts);
+        }
 
         if (query.emitOnlyOnChange)
         {
@@ -462,6 +521,7 @@ int main(int argc, char** argv)
 
     pta.reset();
     client.reset();
+    AndersenWaveDiff::releaseAndersenWaveDiff();
 
     SVFIR::releaseSVFIR();
     LLVMModuleSet::releaseLLVMModuleSet();

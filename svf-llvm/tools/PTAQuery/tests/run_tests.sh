@@ -79,12 +79,14 @@ run_case function_pointer_struct \
 run_case array_locals \
   "5 arr.field0.field0_main a_main" \
   "6 arr.field0.field1_main b_main" \
+  "7 arr.field0.field1_main a_main b_main" \
   "7 p_main a_main b_main"
 
 run_case struct_array_fields \
   "10 box.slots_main a_main" \
   "11 box.field0.field1_main b_main" \
-  "12 p_main b_main"
+  "12 box.slots_main a_main b_main" \
+  "12 p_main a_main b_main"
 
 run_case global_pointer \
   "6 gp g"
@@ -111,8 +113,9 @@ run_case_regex cxt_crash_regression \
 
 run_case cxt_line_usage \
   "4 p_main a_main" \
+  "5 p_main a_main b_main c_main" \
   "6 p_main b_main" \
   "8 p_main c_main" \
-  "9 p_main b_main c_main"
+  "9 p_main a_main b_main c_main"
 
 echo "All cxt-pts tests passed."
