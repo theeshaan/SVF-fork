@@ -300,6 +300,7 @@ struct PointerQuery
     std::string name;
     const Value* queryValue = nullptr;
     NodeID rhsNodeId = 0;
+    ContextCond context;
     bool emitOnlyOnChange = false;
 };
 
@@ -310,6 +311,29 @@ std::string renderNamedPointerVariable(const Value* storage, const Function& fun
     if (!isGlobalStorage(storage))
         name += "_" + function.getName().str();
     return name;
+}
+
+ContextCond buildQueryContext(ContextDDA* pta, const Value* value)
+{
+    ContextCond context;
+
+    const auto* call = dyn_cast<CallBase>(value);
+    if (call == nullptr || LLVMUtil::isIntrinsicInst(call))
+        return context;
+
+    const Function* calleeFun = call->getCalledFunction();
+    if (calleeFun == nullptr)
+        return context;
+
+    LLVMModuleSet* llvmModuleSet = LLVMModuleSet::getLLVMModuleSet();
+    const CallICFGNode* callNode = llvmModuleSet->getCallICFGNode(call);
+    const FunObjVar* callee = llvmModuleSet->getFunObjVar(calleeFun);
+    const CallGraph* callGraph = pta->getCallGraph();
+
+    if (callGraph->hasCallSiteID(callNode, callee))
+        context.getContexts().push_back(callGraph->getCallSiteID(callNode, callee));
+
+    return context;
 }
 
 std::vector<PointerQuery> collectPointerQueries(Module& module)
@@ -468,6 +492,7 @@ int main(int argc, char** argv)
             continue;
 
         query.rhsNodeId = rhsNodeId;
+        query.context = buildQueryContext(pta.get(), query.queryValue);
     }
 
     std::map<std::string, std::string> lastPtsByPointer;
@@ -479,7 +504,7 @@ int main(int argc, char** argv)
         std::string ptsRendered;
         if (isSafeForContextQuery(query.queryValue))
         {
-            const CxtPtSet& pts = pta->computeDDAPts(CxtVar(ContextCond(), query.rhsNodeId));
+            const CxtPtSet& pts = pta->computeDDAPts(CxtVar(query.context, query.rhsNodeId));
             std::set<std::string> renderedTargets;
             for (const CxtVar& obj : pts)
                 renderedTargets.insert(renderObjectName(pag->getSVFVar(obj.get_id())));

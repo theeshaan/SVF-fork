@@ -69,8 +69,8 @@ run_case simple_assign \
 
 run_case call_context \
   "2 s_foo a_main b_main" \
-  "16 pa_main a_main b_main" \
-  "17 pb_main a_main b_main"
+  "16 pa_main a_main" \
+  "17 pb_main b_main"
 
 run_case function_pointer_struct \
   "19 fp.func1_main exampleFunction1" \
