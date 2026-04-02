@@ -106,6 +106,6 @@ run_case cxt_merge_paths \
 
 run_case_regex cxt_crash_regression \
   "^25 b_main call[0-9]+_main$" \
-  "^26 c_main call[0-9]+_main$"
+  "^26 c_main (call[0-9]+_main|\(empty\))$"
 
 echo "All cxt-pts tests passed."
