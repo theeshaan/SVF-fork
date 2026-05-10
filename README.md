@@ -27,6 +27,72 @@
 * <b>SVF now supports analysis for C++ programs.</b>
 <br />
 
+## PTAQuery Points-To Extractors
+
+This repository includes two points-to extractors under `svf-llvm/tools/PTAQuery/`:
+
+* `cxt-pts`: flow-sensitive and context-sensitive points-to extraction, implemented in `svf-llvm/tools/PTAQuery/cxt-pts.cpp`.
+* `fi-pts`: flow-insensitive and context-insensitive points-to extraction, implemented in `svf-llvm/tools/PTAQuery/fi-pts.cpp`.
+
+Build the extractors from the repository root:
+
+```bash
+cmake --build Release-build --target cxt-pts fi-pts -j
+```
+
+If `Release-build` does not exist yet, build SVF first using the normal setup flow:
+
+```bash
+source ./build.sh
+```
+
+Compile the input program to LLVM bitcode before running either extractor. Keeping debug names and locations makes the output easier to relate back to source variables and lines:
+
+```bash
+./llvm-18.1.0.obj/bin/clang -emit-llvm -c -g -fno-discard-value-names input.c -o input.bc
+```
+
+Run the flow- and context-sensitive extractor:
+
+```bash
+./Release-build/bin/cxt-pts input.bc
+```
+
+`cxt-pts` prints one query result per line:
+
+```text
+<source-line> <pointer-name> <pointee>...
+```
+
+Run the flow- and context-insensitive extractor:
+
+```bash
+./Release-build/bin/fi-pts input.bc
+```
+
+`fi-pts` prints tab-separated rows:
+
+```text
+Pointer    Pointees
+<pointer-name>    <pointee>, <pointee>, ...
+```
+
+Both tools accept additional SVF command-line options after the input bitcode path:
+
+```bash
+./Release-build/bin/fi-pts input.bc -stat=false
+./Release-build/bin/cxt-pts input.bc -max-cxt=3
+```
+
+Example using the included PTAQuery test input:
+
+```bash
+./Release-build/bin/fi-pts svf-llvm/tools/PTAQuery/tests/my_test.bc
+./Release-build/bin/cxt-pts svf-llvm/tools/PTAQuery/tests/my_test.bc
+```
+
+If `lib/extapi.bc` is present in the standard build location, the extractors add it automatically. You can also set `SVF_PATH` to the SVF binary directory so the tools can find `../lib/extapi.bc`.
+
 ## Documentation
 
 <br />
@@ -54,5 +120,4 @@
 | Introducing SVF -- [what it does](https://github.com/svf-tools/SVF/wiki/About#what-is-svf) and [how we design it](https://github.com/svf-tools/SVF/wiki/SVF-Design#svf-design)      | A step by step [setup guide](https://github.com/svf-tools/SVF/wiki/Setup-Guide#getting-started) to build SVF | Command-line options to [run SVF](https://github.com/svf-tools/SVF/wiki/User-Guide#quick-start), get [analysis outputs](https://github.com/svf-tools/SVF/wiki/User-Guide#analysis-outputs), and test SVF with [an example](https://github.com/svf-tools/SVF/wiki/Analyze-a-Simple-C-Program) or [PTABen](https://github.com/SVF-tools/PTABen) | Detailed [technical documentation](https://github.com/svf-tools/SVF/wiki/Technical-documentation) and how to [write your own analyses](https://github.com/svf-tools/SVF/wiki/Write-your-own-analysis-in-SVF) in SVF or [use SVF as a lib](https://github.com/SVF-tools/SVF-example) for your tool, and the [course](https://github.com/SVF-tools/Software-Security-Analysis) on SVF  |
 
 <br />
-
 
