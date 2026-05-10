@@ -1,10 +1,8 @@
-#include <stdio.h>
 int main()
 {
-    int a = 10;
-    int b = 20;
+    int *p;
+    int a,b;
 
-    int *pA = &a;
-    int *pB = &b;
-    pA = pB;
+    p = &a;
+    p = &b;
 }

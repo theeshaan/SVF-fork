@@ -297,13 +297,13 @@ std::string renderStorageName(const Value* value)
         std::string gepName = gep->getName().str();
         if (!gepName.empty())
         {
-            while (!gepName.empty() && std::isdigit(static_cast<unsigned char>(gepName.back())))
-                gepName.pop_back();
-            if (!gepName.empty())
+            if (isa<StructType>(gep->getSourceElementType()))
             {
-                oss << "." << gepName;
-                return oss.str();
+                while (!gepName.empty() && std::isdigit(static_cast<unsigned char>(gepName.back())))
+                    gepName.pop_back();
             }
+            oss << "." << gepName;
+            return oss.str();
         }
 
         bool sawField = false;
@@ -339,6 +339,7 @@ struct PointerQuery
 {
     std::string name;
     NodeID rhsNodeId = 0;
+    const Value* queryValue = nullptr;
 };
 
 std::vector<PointerVariable> collectPointerVariables(Module& module)
@@ -445,6 +446,54 @@ std::string renderPointsToSet(SVFIR* pag, const PointsTo& pts)
         oss << target;
     }
     return oss.str();
+}
+
+std::string renderValueQueryName(const Value* value, const Function* function)
+{
+    std::string name = renderValueName(value);
+    if (function != nullptr && !isa<GlobalValue>(value))
+        name += "_" + function->getName().str();
+    return name;
+}
+
+void addDirectValueQueries(Module& module, std::vector<PointerQuery>& queries)
+{
+    std::set<const Value*> seenValues;
+
+    auto addValue = [&](const Value* value, const Function* function)
+    {
+        if (value == nullptr)
+            return;
+
+        if (isa<AllocaInst>(value))
+            return;
+
+        if (!isa<Argument>(value) && !isa<GlobalVariable>(value) && !value->hasName())
+            return;
+
+        if (!seenValues.insert(value).second)
+            return;
+
+        PointerQuery query;
+        query.name = renderValueQueryName(value, function);
+        query.queryValue = value;
+        queries.push_back(std::move(query));
+    };
+
+    for (GlobalVariable& global : module.globals())
+        addValue(&global, nullptr);
+
+    for (Function& function : module)
+    {
+        if (function.isDeclaration())
+            continue;
+
+        for (Argument& arg : function.args())
+            addValue(&arg, &function);
+
+        for (Instruction& inst : instructions(function))
+            addValue(&inst, &function);
+    }
 }
 
 const Value* resolveQueryValue(
@@ -562,14 +611,45 @@ int main(int argc, char** argv)
         PointerQuery query;
         query.name = variable.name;
         query.rhsNodeId = rhsNodeId;
+        query.queryValue = queryValue;
         queries.push_back(std::move(query));
+    }
+
+    addDirectValueQueries(*module, queries);
+
+    for (PointerQuery& query : queries)
+    {
+        if (query.rhsNodeId != 0 || query.queryValue == nullptr)
+            continue;
+
+        NodeID rhsNodeId = 0;
+        if (const auto* call = dyn_cast<CallBase>(query.queryValue))
+        {
+            if (const Function* calleeFun = call->getCalledFunction())
+                rhsNodeId = llvmModuleSet->getReturnNode(calleeFun);
+        }
+
+        if (rhsNodeId == 0 && query.queryValue->getType()->isPointerTy() && llvmModuleSet->hasValueNode(query.queryValue))
+            rhsNodeId = llvmModuleSet->getValueNode(query.queryValue);
+
+        if (rhsNodeId != 0)
+        {
+            const SVFVar* rhsNode = pag->getSVFVar(rhsNodeId);
+            if (rhsNode != nullptr && pag->isValidTopLevelPtr(rhsNode))
+                query.rhsNodeId = rhsNodeId;
+        }
     }
 
     outs() << "Pointer\tPointees\n";
     for (const PointerQuery& query : queries)
     {
-        const PointsTo& pts = pta->getPts(query.rhsNodeId);
-        outs() << query.name << '\t' << renderPointsToSet(pag, pts) << '\n';
+        if (query.rhsNodeId == 0)
+        {
+            outs() << query.name << "\t(empty)\n";
+            continue;
+        }
+
+        outs() << query.name << '\t' << renderPointsToSet(pag, pta->getPts(query.rhsNodeId)) << '\n';
     }
 
     AndersenWaveDiff::releaseAndersenWaveDiff();
